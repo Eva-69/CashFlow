@@ -1,0 +1,19 @@
+{
+  "name": "CashFlow – Personal Finance",
+  "short_name": "CashFlow",
+  "description": "Track your money, investments, budgets and goals",
+  "start_url": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0F1F3D",
+  "theme_color": "#0F1F3D",
+  "categories": ["finance", "productivity"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Add Expense", "short_name": "Expense", "url": "./?action=expense", "description": "Record a new expense" },
+    { "name": "Add Income", "short_name": "Income", "url": "./?action=income", "description": "Record new income" }
+  ]
+}
