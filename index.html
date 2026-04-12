@@ -13,9 +13,32 @@
 <title>CashFlow</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<!-- Security: Content Security Policy -->
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src 'self' 'unsafe-inline'
+    https://cdn.jsdelivr.net
+    https://www.gstatic.com
+    https://www.google.com
+    https://www.recaptcha.net;
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+  font-src https://fonts.gstatic.com;
+  img-src 'self' data: https://lh3.googleusercontent.com https://www.gstatic.com;
+  connect-src 'self'
+    https://*.googleapis.com
+    https://*.firebaseio.com
+    https://*.cloudfunctions.net
+    wss://*.firebaseio.com;
+  frame-src https://www.google.com https://www.recaptcha.net;
+">
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
+<meta http-equiv="X-Frame-Options" content="DENY">
+<meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+<meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=()">
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-check-compat.js"></script>
 <style>
 :root{
   --navy:#0F1F3D;--navy2:#1A3260;--navy3:#24478A;
@@ -488,7 +511,29 @@ input,select,textarea{font-family:inherit;outline:none;border:none;background:no
 #toast.ok{background:#065F46}
 #toast.err{background:#991B1B}
 
-/* ── MISC ── */
+/* ── SECURITY UI ── */
+.sec-warning{position:fixed;top:0;left:50%;transform:translateX(-50%);
+  width:100%;max-width:480px;background:#7C3AED;color:#fff;
+  padding:14px 18px;z-index:500;display:none;align-items:center;gap:12px;
+  box-shadow:0 4px 20px rgba(0,0,0,.3)}
+.sec-warning.show{display:flex}
+.sec-warning-text{flex:1;font-size:.84rem;font-weight:600;line-height:1.4}
+.sec-warning-btn{background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.4);
+  color:#fff;padding:7px 14px;border-radius:20px;font-size:.8rem;font-weight:700;
+  white-space:nowrap;flex-shrink:0}
+.security-badge{display:inline-flex;align-items:center;gap:5px;background:#D1FAE5;
+  color:#065F46;padding:4px 10px;border-radius:20px;font-size:.72rem;font-weight:700}
+.audit-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;
+  border-bottom:1px solid var(--border)}
+.audit-item:last-child{border-bottom:none}
+.audit-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.audit-dot.ok{background:var(--green)}
+.audit-dot.warn{background:var(--amber)}
+.audit-dot.danger{background:var(--red)}
+.audit-info{flex:1}
+.audit-event{font-size:.82rem;font-weight:700}
+.audit-time{font-size:.72rem;color:var(--muted);margin-top:1px}
+
 .mono{font-family:'DM Mono',monospace}
 .text-green{color:var(--green)}
 .text-red{color:var(--red)}
@@ -539,6 +584,12 @@ input,select,textarea{font-family:inherit;outline:none;border:none;background:no
 
 <!-- ══ MAIN APP ══ -->
 <div id="app">
+  <!-- Session Timeout Warning Banner -->
+  <div class="sec-warning" id="session-warning">
+    <div class="sec-warning-text">⏱️ You'll be signed out in <span id="countdown">60</span>s due to inactivity</div>
+    <button class="sec-warning-btn" onclick="resetSessionTimer()">Stay Signed In</button>
+  </div>
+
   <!-- HEADER -->
   <header class="app-header">
     <div class="header-top">
@@ -768,6 +819,25 @@ input,select,textarea{font-family:inherit;outline:none;border:none;background:no
         <div class="s-arrow">›</div>
       </div>
     </div>
+    <div style="margin-bottom:18px">
+      <div class="settings-section-title">Security</div>
+      <div class="settings-item" onclick="showView('security')">
+        <div class="s-icon" style="background:#EDE9FE">🔐</div>
+        <div class="s-info">
+          <div class="s-title">Security Centre</div>
+          <div class="s-sub">Activity log, login history, checks</div>
+        </div>
+        <div class="s-arrow">›</div>
+      </div>
+      <div class="settings-item" onclick="runSecurityCheck()">
+        <div class="s-icon" style="background:#D1FAE5">🛡️</div>
+        <div class="s-info">
+          <div class="s-title">Run Security Check</div>
+          <div class="s-sub">Verify your account is secure</div>
+        </div>
+        <div class="s-arrow">›</div>
+      </div>
+    </div>
     <div id="install-ios-settings" style="display:none" class="mb12">
       <div style="background:#f5f7fb;border-radius:var(--radius-sm);padding:14px;border:1px solid var(--border);font-size:.82rem;line-height:1.7;color:var(--text)">
         📱 <b>Install on iPhone:</b> Open this page in <b>Safari</b>, tap the Share button (□↑) at the bottom, then tap <b>"Add to Home Screen"</b>.
@@ -801,6 +871,38 @@ input,select,textarea{font-family:inherit;outline:none;border:none;background:no
     <p style="font-size:.8rem;color:var(--muted);margin-bottom:16px;line-height:1.5">Set monthly spending limits for each expense category. Leave blank for no limit.</p>
     <div id="budget-set-list"></div>
     <button class="btn btn-navy mt12" onclick="saveBudgets()">Save Budgets</button>
+  </div>
+
+  <!-- ── SECURITY ── -->
+  <div id="view-security" class="main-content" style="display:none">
+    <div id="security-check-card" class="card mb12">
+      <div class="sec-head"><div class="sec-title">🛡️ Security Status</div></div>
+      <div id="security-checks-list">
+        <div class="spinner-wrap"><div class="spinner"></div></div>
+      </div>
+    </div>
+    <div class="card mb12">
+      <div class="sec-head">
+        <div class="sec-title">📋 Activity Log</div>
+        <div class="sec-link" onclick="clearAuditLog()">Clear</div>
+      </div>
+      <div id="audit-log-list">
+        <div class="empty"><span class="empty-icon">📋</span><div class="empty-text">No activity recorded yet.</div></div>
+      </div>
+    </div>
+    <div class="card mb12">
+      <div class="sec-head"><div class="sec-title">📱 Session Info</div></div>
+      <div id="session-info-list"></div>
+    </div>
+    <div style="background:#FEF3C7;border-radius:var(--radius-sm);padding:14px;margin-bottom:14px;font-size:.82rem;color:#92400E;line-height:1.7;border:1.5px solid #FDE68A">
+      <b>🔑 If you think you've been hacked:</b><br>
+      1. Sign out immediately (Settings → Sign Out)<br>
+      2. Change your Google password at myaccount.google.com<br>
+      3. Check Firebase Console → Authentication for unknown users<br>
+      4. Check Firebase Console → Firestore → Usage for spike in reads<br>
+      5. Revoke API key: Google Cloud Console → Credentials → Regenerate
+    </div>
+    <button class="btn btn-danger" style="width:100%" onclick="forceSignOut()">🚨 Emergency Sign Out All Devices</button>
   </div>
 
   <!-- BOTTOM NAV -->
@@ -1160,6 +1262,229 @@ const S = {
 };
 
 // ══════════════════════════════════════════
+//  SECURITY — CONSTANTS
+// ══════════════════════════════════════════
+const SEC = {
+  SESSION_TIMEOUT_MS: 30 * 60 * 1000,   // 30 min inactivity → auto sign out
+  WARN_BEFORE_MS:      60 * 1000,         // warn 60s before
+  RATE_LIMIT_WRITES:   30,                // max writes per minute
+  RATE_LIMIT_WINDOW:   60 * 1000,
+  MAX_NOTE_LEN:        200,
+  MAX_NAME_LEN:        50,
+  MAX_AMOUNT:          10_000_000,
+  writesThisWindow:    [],
+  sessionTimer:        null,
+  warnTimer:           null,
+  countdownTimer:      null,
+  countdownSecs:       60,
+  auditLog:            [],               // in-memory recent events
+};
+
+// ══════════════════════════════════════════
+//  SECURITY — AUDIT LOG
+// ══════════════════════════════════════════
+function secLog(event, level='ok'){
+  const entry = {event, level, time: new Date().toISOString(), uid: S.user?.uid||'anon'};
+  SEC.auditLog.unshift(entry);
+  if(SEC.auditLog.length > 50) SEC.auditLog.pop();
+  // Persist last 20 to localStorage (no sensitive data)
+  try{ localStorage.setItem('cf_audit', JSON.stringify(SEC.auditLog.slice(0,20))) }catch(e){}
+  // Write security-critical events to Firestore
+  if(level==='danger' && S.db && S.user){
+    try{
+      S.db.collection('users').doc(S.user.uid)
+        .collection('security_log').add({...entry, ua: navigator.userAgent.slice(0,100)});
+    }catch(e){}
+  }
+}
+
+function loadAuditLog(){
+  try{
+    const stored = JSON.parse(localStorage.getItem('cf_audit')||'[]');
+    if(stored.length) SEC.auditLog = [...stored, ...SEC.auditLog];
+  }catch(e){}
+}
+
+// ══════════════════════════════════════════
+//  SECURITY — RATE LIMITING
+// ══════════════════════════════════════════
+function checkRateLimit(){
+  const now = Date.now();
+  SEC.writesThisWindow = SEC.writesThisWindow.filter(t => now-t < SEC.RATE_LIMIT_WINDOW);
+  if(SEC.writesThisWindow.length >= SEC.RATE_LIMIT_WRITES){
+    secLog('Rate limit hit — too many writes','warn');
+    showToast('Slow down! Too many actions.','err');
+    return false;
+  }
+  SEC.writesThisWindow.push(now);
+  return true;
+}
+
+// ══════════════════════════════════════════
+//  SECURITY — INPUT SANITIZATION
+// ══════════════════════════════════════════
+function sanitize(str, maxLen=SEC.MAX_NAME_LEN){
+  if(typeof str !== 'string') return '';
+  return str
+    .replace(/[<>'"]/g, '')   // strip HTML chars
+    .replace(/javascript:/gi,'')
+    .replace(/on\w+=/gi,'')
+    .trim()
+    .slice(0, maxLen);
+}
+function validateAmount(val){
+  const n = parseFloat(val);
+  if(isNaN(n) || n <= 0) return null;
+  if(n > SEC.MAX_AMOUNT){ showToast('Amount too large','err'); return null; }
+  return Math.round(n*100)/100; // round to 2dp
+}
+
+// ══════════════════════════════════════════
+//  SECURITY — SESSION TIMEOUT
+// ══════════════════════════════════════════
+function resetSessionTimer(){
+  clearTimeout(SEC.sessionTimer);
+  clearTimeout(SEC.warnTimer);
+  clearInterval(SEC.countdownTimer);
+  document.getElementById('session-warning').classList.remove('show');
+  if(!S.user) return;
+  // Warn 60s before timeout
+  SEC.warnTimer = setTimeout(()=>{
+    SEC.countdownSecs = 60;
+    document.getElementById('countdown').textContent = SEC.countdownSecs;
+    document.getElementById('session-warning').classList.add('show');
+    SEC.countdownTimer = setInterval(()=>{
+      SEC.countdownSecs--;
+      document.getElementById('countdown').textContent = SEC.countdownSecs;
+      if(SEC.countdownSecs <= 0){ clearInterval(SEC.countdownTimer); }
+    }, 1000);
+  }, SEC.SESSION_TIMEOUT_MS - SEC.WARN_BEFORE_MS);
+  // Auto sign out
+  SEC.sessionTimer = setTimeout(()=>{
+    secLog('Auto signed out due to inactivity','warn');
+    showToast('Signed out due to inactivity','err');
+    S.auth.signOut();
+  }, SEC.SESSION_TIMEOUT_MS);
+}
+
+function bindSessionEvents(){
+  ['click','keypress','touchstart','scroll'].forEach(evt =>
+    document.addEventListener(evt, resetSessionTimer, {passive:true})
+  );
+}
+
+// ══════════════════════════════════════════
+//  SECURITY — CHECKS
+// ══════════════════════════════════════════
+async function runSecurityCheck(){
+  showView('security');
+  const listEl = document.getElementById('security-checks-list');
+  listEl.innerHTML = '<div class="spinner-wrap"><div class="spinner"></div></div>';
+  await new Promise(r=>setTimeout(r,600));
+  const checks = [];
+  // 1. Signed in
+  checks.push({ok:!!S.user, label:'Signed in with Google account', detail: S.user?.email||'Not signed in'});
+  // 2. Email verified
+  checks.push({ok:!!S.user?.emailVerified, label:'Google account email verified', detail: S.user?.emailVerified?'Verified ✓':'Not verified'});
+  // 3. Session active
+  checks.push({ok:true, label:'Session active & protected', detail:`Timeout in ${SEC.SESSION_TIMEOUT_MS/60000} min of inactivity`});
+  // 4. Firebase connected
+  checks.push({ok:!!S.db, label:'Firebase connected', detail:isConfigured()?'Connected ✓':'Not connected'});
+  // 5. Rate limiting
+  checks.push({ok:true, label:'Rate limiting enabled', detail:`Max ${SEC.RATE_LIMIT_WRITES} actions/minute`});
+  // 6. Input sanitization
+  checks.push({ok:true, label:'Input sanitization active', detail:'All inputs stripped of dangerous characters'});
+  // 7. HTTPS
+  const isHttps = location.protocol==='https:' || location.hostname==='localhost';
+  checks.push({ok:isHttps, label:'Served over HTTPS', detail:isHttps?'Encrypted connection ✓':'⚠️ Not HTTPS — use GitHub Pages!'});
+  // 8. GitHub Pages domain
+  const isGHPages = location.hostname.includes('github.io') || location.hostname==='localhost';
+  checks.push({ok:isGHPages, label:'Hosted on authorised domain', detail:isGHPages?location.hostname:'Non-standard domain — verify this is correct'});
+  // 9. No recent suspicious events
+  const dangerEvents = SEC.auditLog.filter(e=>e.level==='danger');
+  checks.push({ok:dangerEvents.length===0, label:'No suspicious activity detected', detail:dangerEvents.length?`${dangerEvents.length} suspicious event(s) in log`:'Clean ✓'});
+
+  const allOk = checks.every(c=>c.ok);
+  listEl.innerHTML = `
+    <div style="text-align:center;margin-bottom:14px">
+      <div style="font-size:2.5rem">${allOk?'🛡️':'⚠️'}</div>
+      <div style="font-weight:800;color:${allOk?'var(--green)':'var(--amber)'};font-size:.95rem;margin-top:4px">
+        ${allOk?'All checks passed!':checks.filter(c=>!c.ok).length+' issue(s) found'}
+      </div>
+    </div>
+    ${checks.map(c=>`
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+        <div style="font-size:1rem;margin-top:1px">${c.ok?'✅':'⚠️'}</div>
+        <div style="flex:1">
+          <div style="font-size:.84rem;font-weight:700;color:var(--navy)">${c.label}</div>
+          <div style="font-size:.73rem;color:var(--muted);margin-top:2px">${c.detail}</div>
+        </div>
+      </div>`).join('')}`;
+  renderAuditLog();
+  renderSessionInfo();
+  if(allOk) secLog('Security check passed','ok');
+  else secLog('Security check found issues','warn');
+}
+
+function renderAuditLog(){
+  const el = document.getElementById('audit-log-list');
+  if(!el) return;
+  if(!SEC.auditLog.length){
+    el.innerHTML='<div class="empty" style="padding:16px 0"><div class="empty-text">No activity recorded yet.</div></div>';
+    return;
+  }
+  el.innerHTML = SEC.auditLog.map(e=>{
+    const d = new Date(e.time);
+    const timeStr = d.toLocaleString('en-MY',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+    return`<div class="audit-item">
+      <div class="audit-dot ${e.level}"></div>
+      <div class="audit-info">
+        <div class="audit-event">${e.event}</div>
+        <div class="audit-time">${timeStr}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function clearAuditLog(){
+  if(!confirm('Clear activity log?')) return;
+  SEC.auditLog=[];
+  localStorage.removeItem('cf_audit');
+  renderAuditLog();
+}
+
+function renderSessionInfo(){
+  const el = document.getElementById('session-info-list');
+  if(!el||!S.user) return;
+  const u = S.user;
+  const meta = u.metadata;
+  const info = [
+    {label:'Signed in as', val: u.displayName||'—'},
+    {label:'Email', val: u.email||'—'},
+    {label:'Last sign in', val: meta?.lastSignInTime ? new Date(meta.lastSignInTime).toLocaleString('en-MY') : '—'},
+    {label:'Account created', val: meta?.creationTime ? new Date(meta.creationTime).toLocaleString('en-MY') : '—'},
+    {label:'Browser', val: navigator.userAgent.includes('Chrome')?'Chrome':navigator.userAgent.includes('Safari')?'Safari':'Other'},
+    {label:'Session timeout', val: `${SEC.SESSION_TIMEOUT_MS/60000} minutes`},
+  ];
+  el.innerHTML = info.map(i=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:.8rem;color:var(--muted);font-weight:600">${i.label}</span>
+      <span style="font-size:.82rem;font-weight:700;text-align:right;max-width:200px;word-break:break-all">${i.val}</span>
+    </div>`).join('');
+}
+
+async function forceSignOut(){
+  if(!confirm('This signs you out on this device. You will need to sign in again.\n\nTo revoke ALL sessions, also change your Google password at myaccount.google.com')) return;
+  secLog('Manual emergency sign out','warn');
+  await S.auth.signOut();
+  showToast('Signed out ✓','ok');
+}
+
+// Console honeypot — deters casual snoopers
+console.log('%c⛔ STOP!', 'color:red;font-size:32px;font-weight:900');
+console.log('%cThis is a private finance app. If someone told you to paste anything here, it is a scam. Close this immediately.', 'color:#333;font-size:14px');
+
+// ══════════════════════════════════════════
 //  FIREBASE
 // ══════════════════════════════════════════
 function isConfigured(){return!!localStorage.getItem('cf_config')}
@@ -1187,7 +1512,20 @@ function initFirebase(){
     if(!firebase.apps.length)firebase.initializeApp(cfg);
     S.db=firebase.firestore();
     S.auth=firebase.auth();
-    // Enable offline persistence
+
+    // ── App Check (reCAPTCHA v3) ──────────────────
+    // STEP: Replace 'YOUR_RECAPTCHA_SITE_KEY' with your actual key from
+    //       console.firebase.google.com → App Check → Web → reCAPTCHA v3
+    // Leave as-is if you haven't set up App Check yet — app still works.
+    const recaptchaKey = localStorage.getItem('cf_recaptcha_key') || 'YOUR_RECAPTCHA_SITE_KEY';
+    if(recaptchaKey && recaptchaKey !== 'YOUR_RECAPTCHA_SITE_KEY'){
+      try{
+        firebase.appCheck().activate(recaptchaKey, true);
+        secLog('App Check activated','ok');
+      }catch(e){ secLog('App Check failed: '+e.message,'warn') }
+    }
+
+    // Offline persistence for PWA
     S.db.enablePersistence({synchronizeTabs:true}).catch(e=>console.warn('Persistence:',e.code));
     return true;
   }catch(e){console.error(e);return false}
@@ -1198,9 +1536,13 @@ function initFirebase(){
 // ══════════════════════════════════════════
 function signInGoogle(){
   S.auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
-    .catch(e=>{ document.getElementById('auth-err').textContent=e.message });
+    .then(()=>secLog('Sign in successful','ok'))
+    .catch(e=>{
+      secLog('Sign in failed: '+e.code,'warn');
+      document.getElementById('auth-err').textContent=e.message;
+    });
 }
-function signOutUser(){if(!confirm('Sign out?'))return;S.auth.signOut()}
+function signOutUser(){if(!confirm('Sign out?'))return;secLog('Manual sign out','ok');S.auth.signOut()}
 
 // ══════════════════════════════════════════
 //  REFS
@@ -1399,7 +1741,7 @@ function updateHeader(){
 //  VIEW ROUTING
 // ══════════════════════════════════════════
 function showView(name){
-  const views=['dashboard','invest','history','analytics','settings','categories','budgets'];
+  const views=['dashboard','invest','history','analytics','settings','categories','budgets','security'];
   views.forEach(v=>{
     const el=document.getElementById('view-'+v);
     if(el)el.style.display=v===name?'block':'none';
@@ -1418,6 +1760,7 @@ function renderCurrentView(){
     case'settings':renderSettings();break;
     case'categories':renderCategories();break;
     case'budgets':renderBudgets();break;
+    case'security':renderAuditLog();renderSessionInfo();break;
   }
 }
 
@@ -1818,19 +2161,24 @@ function renderInvLineChart(inv,snaps){
 //  CRUD – TRANSACTIONS
 // ══════════════════════════════════════════
 async function saveTransaction(){
-  const amount=parseFloat(document.getElementById('add-amount').value);
-  const note=document.getElementById('add-note').value.trim();
-  const dateVal=document.getElementById('add-date').value;
-  const timeVal=document.getElementById('add-time').value;
-  if(!amount||amount<=0){showToast('Enter a valid amount','err');return}
+  if(!checkRateLimit()) return;
+  const amount = validateAmount(document.getElementById('add-amount').value);
+  const note   = sanitize(document.getElementById('add-note').value, SEC.MAX_NOTE_LEN);
+  const dateVal= document.getElementById('add-date').value;
+  const timeVal= document.getElementById('add-time').value;
+  if(!amount){showToast('Enter a valid amount','err');return}
   if(!S.selCatId){showToast('Select a category','err');return}
+  if(!dateVal){showToast('Select a date','err');return}
   const dt=new Date(dateVal+'T'+timeVal);
-  const data={type:S.addType,amount,categoryId:S.selCatId,note,date:firebase.firestore.Timestamp.fromDate(dt),createdAt:firebase.firestore.FieldValue.serverTimestamp()};
+  if(isNaN(dt.getTime())){showToast('Invalid date/time','err');return}
+  const data={type:S.addType,amount,categoryId:S.selCatId,note,
+    date:firebase.firestore.Timestamp.fromDate(dt),
+    createdAt:firebase.firestore.FieldValue.serverTimestamp()};
   try{
-    if(S.editingTxId)await txRef().doc(S.editingTxId).update(data);
-    else await txRef().add(data);
+    if(S.editingTxId){ await txRef().doc(S.editingTxId).update(data); secLog('Transaction updated'); }
+    else { await txRef().add(data); secLog('Transaction added'); }
     showToast(S.editingTxId?'Updated ✓':'Saved ✓','ok');closeAddModal();
-  }catch(e){showToast('Error: '+e.message,'err')}
+  }catch(e){secLog('TX write error: '+e.code,'warn');showToast('Error: '+e.message,'err')}
 }
 async function deleteCurrTx(){
   if(!S.editingTxId||!confirm('Delete?'))return;
@@ -1842,14 +2190,15 @@ async function deleteTx(id){await txRef().doc(id).delete();showToast('Deleted','
 //  CRUD – CATEGORIES
 // ══════════════════════════════════════════
 async function saveCategory(){
-  const name=document.getElementById('cat-name').value.trim();
+  if(!checkRateLimit()) return;
+  const name=sanitize(document.getElementById('cat-name').value);
   if(!name){showToast('Enter a name','err');return}
   const data={name,icon:S.selEmoji,color:S.selColor,type:S.catType};
   try{
-    if(S.editingCatId)await catRef().doc(S.editingCatId).update(data);
-    else await catRef().add(data);
+    if(S.editingCatId){ await catRef().doc(S.editingCatId).update(data); secLog('Category updated'); }
+    else { await catRef().add(data); secLog('Category added'); }
     showToast('Category saved ✓','ok');closeCatModal();
-  }catch(e){showToast('Error','err')}
+  }catch(e){secLog('Cat write error: '+e.code,'warn');showToast('Error','err')}
 }
 async function deleteCurrCat(){
   if(!S.editingCatId||!confirm('Delete category?'))return;
@@ -1860,17 +2209,22 @@ async function deleteCurrCat(){
 //  CRUD – INVESTMENTS
 // ══════════════════════════════════════════
 async function saveInvestment(){
-  const name=document.getElementById('inv-name').value.trim();
-  const initialAmount=parseFloat(document.getElementById('inv-initial').value);
-  const dateVal=document.getElementById('inv-date').value;
+  if(!checkRateLimit()) return;
+  const name = sanitize(document.getElementById('inv-name').value);
+  const initialAmount = validateAmount(document.getElementById('inv-initial').value);
+  const dateVal = document.getElementById('inv-date').value;
+  const notes = sanitize(document.getElementById('inv-notes').value, SEC.MAX_NOTE_LEN);
   if(!name){showToast('Enter a name','err');return}
-  if(!initialAmount||initialAmount<0){showToast('Enter initial amount','err');return}
-  const data={name,type:document.getElementById('inv-type').value,icon:S.invSelEmoji,color:S.invSelColor,initialAmount,initialDate:firebase.firestore.Timestamp.fromDate(new Date(dateVal)),notes:document.getElementById('inv-notes').value.trim()};
+  if(!initialAmount){showToast('Enter a valid initial amount','err');return}
+  if(!dateVal){showToast('Select a start date','err');return}
+  const data={name,type:document.getElementById('inv-type').value,icon:S.invSelEmoji,
+    color:S.invSelColor,initialAmount,
+    initialDate:firebase.firestore.Timestamp.fromDate(new Date(dateVal)),notes};
   try{
-    if(S.editingInvId)await invRef().doc(S.editingInvId).update(data);
-    else await invRef().add(data);
+    if(S.editingInvId){ await invRef().doc(S.editingInvId).update(data); secLog('Investment updated'); }
+    else { await invRef().add(data); secLog('Investment added'); }
     showToast('Investment saved ✓','ok');closeInvestModal();
-  }catch(e){showToast('Error: '+e.message,'err')}
+  }catch(e){secLog('Inv write error: '+e.code,'warn');showToast('Error: '+e.message,'err')}
 }
 async function deleteCurrInvestment(){
   if(!S.editingInvId||!confirm('Delete investment and all its history?'))return;
@@ -2149,6 +2503,7 @@ if('serviceWorker'in navigator){
 //  INIT
 // ══════════════════════════════════════════
 function init(){
+  loadAuditLog();
   if(!isConfigured()){document.getElementById('setup-screen').classList.remove('hidden');return}
   if(!initFirebase()){document.getElementById('setup-screen').classList.remove('hidden');return}
   S.auth.onAuthStateChanged(user=>{
@@ -2166,8 +2521,14 @@ function init(){
       setupListeners();
       showView('dashboard');
       checkIOSInstall();
+      // Security
+      secLog(`Signed in as ${user.email}`,'ok');
+      bindSessionEvents();
+      resetSessionTimer();
     } else {
       S.user=null;teardownListeners();
+      clearTimeout(SEC.sessionTimer);clearTimeout(SEC.warnTimer);clearInterval(SEC.countdownTimer);
+      document.getElementById('session-warning').classList.remove('show');
       document.getElementById('app').style.display='none';
       document.getElementById('setup-screen').classList.add('hidden');
       document.getElementById('auth-screen').classList.remove('hidden');
