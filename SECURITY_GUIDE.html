@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CashFlow — Security Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#0F1F3D;--navy2:#1A3260;--teal:#00C9A7;--teal2:#00A88C;
+  --green:#22C55E;--red:#EF4444;--amber:#F59E0B;--blue:#3B82F6;
+  --bg:#F0F4FB;--card:#fff;--text:#0F1F3D;--muted:#64748B;--border:#DDE4F0;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);line-height:1.6}
+a{color:var(--teal2);text-decoration:none;font-weight:600}
+a:hover{text-decoration:underline}
+code{font-family:'DM Mono',monospace;background:#1e293b;color:#e2e8f0;
+  padding:2px 7px;border-radius:5px;font-size:.85em}
+pre{font-family:'DM Mono',monospace;background:#0f172a;color:#e2e8f0;
+  padding:18px 20px;border-radius:14px;overflow-x:auto;font-size:.84rem;
+  line-height:1.7;margin:12px 0;border:1px solid #1e293b}
+pre .comment{color:#64748b}
+pre .key{color:#7dd3fc}
+pre .val{color:#86efac}
+pre .str{color:#fca5a5}
+
+/* ── HERO ── */
+.hero{background:linear-gradient(160deg,var(--navy) 0%,var(--navy2) 100%);
+  color:#fff;padding:60px 24px 40px;text-align:center}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.1);
+  border:1px solid rgba(255,255,255,.2);border-radius:30px;padding:6px 16px;
+  font-size:.82rem;font-weight:700;margin-bottom:20px;color:rgba(255,255,255,.8)}
+.hero h1{font-size:2.4rem;font-weight:900;letter-spacing:-.02em;margin-bottom:10px;
+  background:linear-gradient(135deg,#fff,var(--teal));-webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;background-clip:text}
+.hero p{font-size:1rem;color:rgba(255,255,255,.6);max-width:520px;margin:0 auto 28px}
+.hero-stats{display:flex;justify-content:center;gap:32px;flex-wrap:wrap}
+.hero-stat{text-align:center}
+.hero-stat-val{font-size:1.6rem;font-weight:900;color:var(--teal)}
+.hero-stat-label{font-size:.75rem;color:rgba(255,255,255,.5);font-weight:600;
+  text-transform:uppercase;letter-spacing:.05em}
+
+/* ── LAYOUT ── */
+.container{max-width:760px;margin:0 auto;padding:0 20px}
+.page{padding:40px 0 80px}
+
+/* ── TOC ── */
+.toc{background:var(--card);border-radius:16px;padding:20px 24px;
+  margin:32px 0;border:1px solid var(--border);
+  box-shadow:0 4px 20px rgba(15,31,61,.07)}
+.toc-title{font-size:.78rem;font-weight:800;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.07em;margin-bottom:14px}
+.toc-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.toc-item{display:flex;align-items:center;gap:10px;padding:8px 10px;
+  border-radius:10px;cursor:pointer;transition:.15s;text-decoration:none;color:var(--text)}
+.toc-item:hover{background:var(--bg);text-decoration:none}
+.toc-num{width:26px;height:26px;border-radius:8px;background:var(--navy);color:#fff;
+  font-size:.72rem;font-weight:800;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0}
+.toc-label{font-size:.84rem;font-weight:600}
+
+/* ── STEP CARD ── */
+.step-card{background:var(--card);border-radius:20px;padding:28px;
+  margin-bottom:20px;border:1px solid var(--border);
+  box-shadow:0 4px 20px rgba(15,31,61,.07);scroll-margin-top:20px}
+.step-header{display:flex;align-items:flex-start;gap:16px;margin-bottom:20px}
+.step-num{width:48px;height:48px;border-radius:14px;background:var(--navy);color:#fff;
+  font-size:1.1rem;font-weight:900;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0}
+.step-meta{flex:1}
+.step-label{font-size:.75rem;font-weight:800;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.06em;margin-bottom:4px}
+.step-title{font-size:1.2rem;font-weight:900;color:var(--navy);line-height:1.2}
+.step-sub{font-size:.84rem;color:var(--muted);margin-top:4px}
+.priority-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;
+  border-radius:20px;font-size:.72rem;font-weight:800;margin-bottom:16px}
+.priority-badge.critical{background:#FEE2E2;color:#991B1B}
+.priority-badge.high{background:#FEF3C7;color:#92400E}
+.priority-badge.medium{background:#DBEAFE;color:#1E40AF}
+.priority-badge.done{background:#D1FAE5;color:#065F46}
+
+/* ── INSTRUCTION LIST ── */
+.instruction-list{counter-reset:steps}
+.instruction{display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--border);
+  align-items:flex-start}
+.instruction:last-child{border-bottom:none}
+.instruction-num{width:28px;height:28px;border-radius:8px;background:#f0f4fb;
+  color:var(--navy);font-size:.78rem;font-weight:800;display:flex;
+  align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.instruction-body{flex:1;font-size:.88rem;color:var(--text);line-height:1.6}
+.instruction-body b{color:var(--navy)}
+.instruction-note{background:#f8faff;border-left:3px solid var(--teal);
+  padding:8px 12px;border-radius:0 8px 8px 0;margin-top:8px;
+  font-size:.8rem;color:var(--muted);line-height:1.5}
+
+/* ── INFO BOX ── */
+.info-box{border-radius:12px;padding:14px 16px;margin:12px 0;font-size:.84rem;line-height:1.6}
+.info-box.tip{background:#f0fdf4;border:1.5px solid #bbf7d0;color:#166534}
+.info-box.warn{background:#fffbeb;border:1.5px solid #fde68a;color:#92400E}
+.info-box.danger{background:#fef2f2;border:1.5px solid #fecaca;color:#991b1b}
+.info-box.info{background:#eff6ff;border:1.5px solid #bfdbfe;color:#1e40af}
+.info-box-title{font-weight:800;margin-bottom:4px}
+
+/* ── TRUTH BOX ── */
+.truth-box{background:linear-gradient(135deg,var(--navy),var(--navy2));
+  border-radius:16px;padding:20px 22px;margin:16px 0;color:#fff}
+.truth-box-title{font-size:.9rem;font-weight:800;color:var(--teal);margin-bottom:8px}
+.truth-box p{font-size:.84rem;color:rgba(255,255,255,.75);line-height:1.7}
+
+/* ── COMPARISON TABLE ── */
+.compare-table{width:100%;border-collapse:collapse;margin:12px 0;font-size:.84rem}
+.compare-table th{background:var(--navy);color:#fff;padding:10px 14px;
+  text-align:left;font-weight:700}
+.compare-table th:first-child{border-radius:10px 0 0 0}
+.compare-table th:last-child{border-radius:0 10px 0 0}
+.compare-table td{padding:10px 14px;border-bottom:1px solid var(--border)}
+.compare-table tr:last-child td{border-bottom:none}
+.compare-table tr:nth-child(even) td{background:#f8faff}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;
+  font-size:.72rem;font-weight:800}
+.badge.green{background:#d1fae5;color:#065f46}
+.badge.red{background:#fee2e2;color:#991b1b}
+.badge.amber{background:#fef3c7;color:#92400e}
+
+/* ── MONITORING GRID ── */
+.monitor-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0}
+.monitor-card{background:#f8faff;border-radius:12px;padding:14px;
+  border:1.5px solid var(--border)}
+.monitor-card-title{font-size:.82rem;font-weight:800;color:var(--navy);margin-bottom:6px;
+  display:flex;align-items:center;gap:6px}
+.monitor-card p{font-size:.78rem;color:var(--muted);line-height:1.5}
+
+/* ── CHECKLIST ── */
+.checklist{margin:12px 0}
+.check-item{display:flex;align-items:flex-start;gap:10px;padding:8px 0;
+  border-bottom:1px solid var(--border)}
+.check-item:last-child{border-bottom:none}
+.check-box{width:20px;height:20px;border:2px solid var(--border);border-radius:5px;
+  flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:.15s}
+.check-box.checked{background:var(--teal);border-color:var(--teal);color:#fff;font-size:.75rem}
+.check-label{font-size:.84rem;color:var(--text);line-height:1.5;flex:1}
+.check-label.checked-text{text-decoration:line-through;color:var(--muted)}
+
+/* ── HACK RESPONSE ── */
+.hack-steps{counter-reset:hack}
+.hack-step{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--border);
+  align-items:flex-start}
+.hack-step:last-child{border-bottom:none}
+.hack-step-num{width:36px;height:36px;border-radius:10px;background:var(--red);color:#fff;
+  font-size:.88rem;font-weight:800;display:flex;align-items:center;
+  justify-content:center;flex-shrink:0}
+.hack-step-body{flex:1}
+.hack-step-title{font-size:.9rem;font-weight:800;color:var(--navy);margin-bottom:3px}
+.hack-step-desc{font-size:.8rem;color:var(--muted);line-height:1.5}
+
+/* ── SECURITY RULES BOX ── */
+.rules-box{position:relative;margin:12px 0}
+.rules-box-label{position:absolute;top:10px;right:12px;
+  background:#334155;color:#94a3b8;font-size:.7rem;font-weight:700;
+  padding:2px 8px;border-radius:5px;font-family:'DM Mono',monospace}
+.copy-btn{background:#334155;border:none;color:#94a3b8;padding:4px 10px;
+  border-radius:6px;font-size:.75rem;font-weight:700;cursor:pointer;
+  transition:.15s;font-family:'Outfit',sans-serif}
+.copy-btn:hover{background:#475569;color:#fff}
+
+/* ── FOOTER ── */
+.footer{background:var(--navy);color:rgba(255,255,255,.5);text-align:center;
+  padding:30px;font-size:.8rem;margin-top:60px}
+.footer strong{color:rgba(255,255,255,.8)}
+
+/* ── PRINT ── */
+@media print{
+  .toc-item:hover{background:none}
+  .check-box{border-color:#333}
+  .hero{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+@media(max-width:600px){
+  .hero h1{font-size:1.8rem}
+  .toc-grid{grid-template-columns:1fr}
+  .monitor-grid{grid-template-columns:1fr}
+  .step-title{font-size:1.05rem}
+}
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge">🔐 CashFlow Security Guide v2.0</div>
+  <h1>Protect Your Financial Data</h1>
+  <p>A complete step-by-step guide to securing your CashFlow app against hackers, data leaks, and unauthorized access.</p>
+  <div class="hero-stats">
+    <div class="hero-stat"><div class="hero-stat-val">9</div><div class="hero-stat-label">Security Layers</div></div>
+    <div class="hero-stat"><div class="hero-stat-val">RM 0</div><div class="hero-stat-label">Cost</div></div>
+    <div class="hero-stat"><div class="hero-stat-val">~45min</div><div class="hero-stat-label">Setup Time</div></div>
+  </div>
+</div>
+
+<div class="container page">
+
+  <!-- TRUTH BOX -->
+  <div class="truth-box" style="margin-top:8px">
+    <div class="truth-box-title">🔍 The Honest Truth About Web App Security</div>
+    <p>Your Firebase config (apiKey, projectId) <strong style="color:#fff">cannot be fully hidden</strong> in any web app — not even apps built by Google. Anyone opening DevTools can see it. <strong style="color:#fff">This is normal and not dangerous</strong>, because the API key alone is useless without passing Firestore Security Rules. Your real protection is the <strong style="color:var(--teal)">rules + App Check + API key restrictions</strong> working together. This guide sets up all of them.</p>
+  </div>
+
+  <!-- TABLE OF CONTENTS -->
+  <div class="toc">
+    <div class="toc-title">What's covered in this guide</div>
+    <div class="toc-grid">
+      <a href="#step1" class="toc-item"><div class="toc-num">1</div><div class="toc-label">Firestore Security Rules</div></a>
+      <a href="#step2" class="toc-item"><div class="toc-num">2</div><div class="toc-label">Restrict Your API Key</div></a>
+      <a href="#step3" class="toc-item"><div class="toc-num">3</div><div class="toc-label">Firebase App Check</div></a>
+      <a href="#step4" class="toc-item"><div class="toc-num">4</div><div class="toc-label">Auth Domain Lockdown</div></a>
+      <a href="#step5" class="toc-item"><div class="toc-num">5</div><div class="toc-label">Budget & Usage Alerts</div></a>
+      <a href="#step6" class="toc-item"><div class="toc-num">6</div><div class="toc-label">GitHub Security Scanning</div></a>
+      <a href="#step7" class="toc-item"><div class="toc-num">7</div><div class="toc-label">Google Account Security</div></a>
+      <a href="#step8" class="toc-item"><div class="toc-num">8</div><div class="toc-label">Monitor for Hacking</div></a>
+      <a href="#step9" class="toc-item"><div class="toc-num">9</div><div class="toc-label">If You Get Hacked</div></a>
+    </div>
+  </div>
+
+  <!-- ══ STEP 1 ══ -->
+  <div class="step-card" id="step1">
+    <div class="step-header">
+      <div class="step-num">1</div>
+      <div class="step-meta">
+        <div class="step-label">Firebase Console</div>
+        <div class="step-title">Firestore Security Rules</div>
+        <div class="step-sub">The single most important protection. Even with your API key, nobody can touch your data.</div>
+      </div>
+    </div>
+    <div class="priority-badge critical">🔴 CRITICAL — Do This First</div>
+
+    <div class="info-box warn">
+      <div class="info-box-title">⚠️ Default rules are WIDE OPEN</div>
+      When you first create Firestore, the default rules allow <b>anyone in the world</b> to read and write your database. You must replace them immediately.
+    </div>
+
+    <div class="instruction-list">
+      <div class="instruction">
+        <div class="instruction-num">1</div>
+        <div class="instruction-body">Go to <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> and click your project.</div>
+      </div>
+      <div class="instruction">
+        <div class="instruction-num">2</div>
+        <div class="instruction-body">In the left sidebar, click <b>Build → Firestore Database</b>.</div>
+      </div>
+      <div class="instruction">
+        <div class="instruction-num">3</div>
+        <div class="instruction-body">Click the <b>Rules</b> tab at the top of the Firestore page.</div>
+      </div>
+      <div class="instruction">
+        <div class="instruction-num">4</div>
+        <div class="instruction-body"><b>Select ALL the existing text</b> and delete it. Then paste the rules below exactly.</div>
+      </div>
+    </div>
+
+    <div class="rules-box">
+      <div class="rules-box-label">Firestore Rules</div>
+      <pre><span class="comment">// CashFlow — Secure Firestore Rules</span>
+<span class="comment">// Only YOU (signed in with YOUR Google account) can access your data.</span>
+rules_version = <span class="str">'2'</span>;
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    <span class="comment">// Your personal data — only you can read/write</span>
+    match /users/{userId}/{document=**} {
+      allow read, write: if
+        request.auth != null
+        && request.auth.uid == userId
+        && request.auth.token.email_verified == true;
+    }
+
+    <span class="comment">// Block everything else — no exceptions</span>
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}</pre>
+    </div>
+
+    <div class="instruction-list">
+      <div class="instruction">
+        <div class="instruction-num">5</div>
+        <div class="instruction-body">Click the <b>Publish</b> button (blue button top right). Done.</div>
+      </div>
+    </div>
+
+    <div class="info-box tip">
+      <div class="info-box-title">✅ What this does</div>
+      <b>request.auth.uid == userId</b> means each user can only see their own data.<br>
+      <b>email_verified == true</b> means only Google-verified accounts work — blocks throwaway accounts.<br>
+      <b>allow read, write: if false</b> blocks everything at the root level as a fallback.
+    </div>
+  </div>
+
+  <!-- ══ STEP 2 ══ -->
+  <div class="step-card" id="step2">
+    <div class="step-header">
+      <div class="step-num">2</div>
+      <div class="step-meta">
+        <div class="step-label">Google Cloud Console</div>
+        <div class="step-title">Restrict Your API Key to Your Domain</div>
+        <div class="step-sub">Your API key will only work when requests come from your GitHub Pages URL — not from anyone else's computer.</div>
+      </div>
+    </div>
+    <div class="priority-badge critical">🔴 CRITICAL</div>
+
+    <div class="instruction-list">
+      <div class="instruction">
+        <div class="instruction-num">1</div>
+        <div class="instruction-body">Go to <a href="https://console.cloud.google.com" target="_blank">console.cloud.google.com</a></div>
+      </div>
+      <div class="instruction">
+        <div class="instruction-num">2</div>
+        <div class="instruction-body">At the top, click the project selector dropdown → select your Firebase project name.</div>
+      </div>
+      <div class="instruction">
+        <div class="instruction-num">3</div>
+        <div class="instruction-body">Left sidebar → <b>APIs &amp; Services → Credentials</b></div>
+      </div>
+      <div class="instruction">
+        <div class="instruction-num">4</div>
+        <div class="instruction-body">Under <b>API Keys</b>, you'll see a key called <b>"Browser key (auto created by Firebase)"</b>. Click it.</div>
+      </div>
+      <div class="instruction">
+        <div class="instruction-num">5</div>
+        <div class="instruction-body">Under <b>"Application restrictions"</b>, select <b>"HTTP referrers (websites)"</b>.</div>
+      </div>
+      <div class="instruction">
+        <div class="instruction-num">6</div>
+        <div class="instruction-body">
+          Under <b>"Website restrictions"</b>, click <b>Add an item</b> and add these two entries:<br>
+          <code>https://YOUR_USERNAME.github.io/*</code><br>
+          <code>http://localhost/*</code>
+          <div class="instruction-note">Replace YOUR_USERNAME with your actual GitHub username. The localhost entry lets you test locally.</div>
+        </div>
+      </div>
+      <div class="instruction">
+        <div class="instruction-num">7</div>
+        <div class="instruction-body">Click <b>Save</b>. Changes take up to 5 minutes to activate.</div>
+      </div>
+    </div>
+
+    <div class="info-box tip">
+      <div class="info-box-title">✅ Result</div>
+      If someone copies your API key and tries to use it in their own app or Postman, they get: <code>API key not valid. Please pass a valid API key.</code>
+    </div>
+  </div>
+
+  <!-- ══ STEP 3 ══ -->
+  <div class="step-card" id="step3">
+    <div class="step-header">
+      <div class="step-num">3</div>
+      <div class="step-meta">
+        <div class="step-label">Firebase Console</div>
+        <div class="step-title">Enable Firebase App Check</div>
+        <div class="step-sub">Makes Firebase verify that requests come from your actual app — not scripts, bots, or other apps using your key.</div>
+      </div>
+    </div>
+    <div class="priority-badge high">🟡 HIGH PRIORITY</div>
+
+    <div class="instruction-list">
+      <div class="instruction">
+        <div class="instruction-num">1</div>
+        <div class="instruction-body">In Firebase Console → left sidebar → <b>Build → App Check</b></div>
+      </div>
+      <div class="instruction">
+        <div class="instruction-num">2</div>
+        <div class="instruction-body">Click <b>"Get started"</b></div>
+      </div>
+      <div class="instruction">
+        <div class="instruction-num">3</div>
+        <div class="instruction-body">Click your web app (the <b>&lt;/&gt;</b> icon one). Choose <b>reCAPTCHA v3</b> as the provider.</div>
+      </div>
+      <div class="instruction">
+        <div class="instruction-num">4</div>
+        <div class="instruction-body">
+          Open a new tab → go to <a href="https://www.google.com/recaptcha/admin" target="_blank">google.com/recaptcha/admin</a> → sign in → click <b>"+"</b> to create new site.<br><br>
+          Fill in:<br>
+          • <b>Label:</b> CashFlow<br>
+          • <b>reCAPTCHA type:</b> Score based (v3)<br>
+          • <b>Domains:</b> add <code>YOUR_USERNAME.github.io</code> and <code>localhost</code><br><br>
+          Click <b>Submit</b> → copy the <b>Site Key</b> (starts with 6L...)
+        </div>
+      </div>
+      <div class="instruction">
+        <div class="instruction-num">5</div>
+        <div class="instruction-body">Back in Firebase App Check → paste the Site Key → click <b>Save</b>.</div>
+      </div>
+      <div class="instruction">
+        <div class="instruction-num">6</div>
+        <div class="instruction-body">Click the <b>"Enforce"</b> button next to Firestore. This means only your app can write data.</div>
+      </div>
+      <div class="instruction">
+        <div class="instruction-num">7</div>
+        <div class="instruction-body">
+          In your CashFlow app: open <b>Settings</b> → scroll to bottom → tap <b>"Set App Check Key"</b>. Or open DevTools → Console → type:<br>
+          <code>localStorage.setItem('cf_recaptcha_key', 'YOUR_SITE_KEY_HERE')</code>
+          <div class="instruction-note">The app is already coded to use this key automatically once you store it.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ STEP 4 ══ -->
+  <div class="step-card" id="step4">
+    <div class="step-header">
+      <div class="step-num">4</div>
+      <div class="step-meta">
+        <div class="step-label">Firebase Console</div>
+        <div class="step-title">Lock Down Authorised Domains</div>
+        <div class="step-sub">Prevent sign-ins from any website except your own.</div>
+      </div>
+    </div>
+    <div class="priority-badge high">🟡 HIGH PRIORITY</div>
+
+    <div class="instruction-list">
+      <div class="instruction">
+        <div class="instruction-num">1</div>
+        <div class="instruction-body">Firebase Console → <b>Build → Authentication → Settings tab</b></div>
+      </div>
+      <div class="instruction">
+        <div class="instruction-num">2</div>
+        <div class="instruction-body">Under <b>"Authorised domains"</b>, you'll see a list. Make sure it contains <b>only</b> these:
+          <ul style="margin:8px 0 0 20px;font-size:.84rem">
+            <li><code>localhost</code></li>
+            <li><code>YOUR_USERNAME.github.io</code></li>
+          </ul>
+          Delete anything else you don't recognise.
+        </div>
+      </div>
+      <div class="instruction">
+        <div class="instruction-num">3</div>
+        <div class="instruction-body">Under <b>"User account linking"</b> → enable <b>"Prevent creation of multiple accounts with same email"</b>.</div>
+      </div>
+    </div>
+    <div class="info-box tip">
+      <div class="info-box-title">✅ What this does</div>
+      Even if someone clones your app and hosts it on their own website, Google Sign-In will refuse to work on their domain.
+    </div>
+  </div>
+
+  <!-- ══ STEP 5 ══ -->
+  <div class="step-card" id="step5">
+    <div class="step-header">
+      <div class="step-num">5</div>
+      <div class="step-meta">
+        <div class="step-label">Google Cloud Console</div>
+        <div class="step-title">Set Budget &amp; Usage Alerts</div>
+        <div class="step-sub">Get an email the moment anything suspicious happens — before it costs you money.</div>
+      </div>
+    </div>
+    <div class="priority-badge high">🟡 HIGH PRIORITY</div>
+
+    <div class="instruction-list">
+      <div class="instruction">
+        <div class="instruction-num">1</div>
+        <div class="instruction-body">Go to <a href="https://console.cloud.google.com/billing" target="_blank">console.cloud.google.com/billing</a></div>
+      </div>
+      <div class="instruction">
+        <div class="instruction-num">2</div>
+        <div class="instruction-body">Click your billing account → left sidebar → <b>Budgets &amp; alerts</b> → <b>Create budget</b></div>
+      </div>
+      <div class="instruction">
+        <div class="instruction-num">3</div>
+        <div class="instruction-body">Fill in:
+          <ul style="margin:8px 0 0 20px;font-size:.84rem">
+            <li><b>Name:</b> CashFlow Alert</li>
+            <li><b>Scope:</b> select your Firebase project</li>
+            <li><b>Budget amount:</b> <code>$1</code> USD (you should NEVER reach this for personal use)</li>
+          </ul>
+        </div>
+      </div>
+      <div class="instruction">
+        <div class="instruction-num">4</div>
+        <div class="instruction-body">Under <b>Alert thresholds</b>, add: <b>50%</b>, <b>90%</b>, <b>100%</b>. Make sure <b>"Email alerts to billing admins"</b> is checked.</div>
+      </div>
+      <div class="instruction">
+        <div class="instruction-num">5</div>
+        <div class="instruction-body">Click <b>Finish</b>. You'll get an email if your Firebase usage ever spikes unexpectedly.</div>
+      </div>
+    </div>
+
+    <div class="info-box info">
+      <div class="info-box-title">ℹ️ Free tier limits (very generous for personal use)</div>
+      Firestore: 50,000 reads/day, 20,000 writes/day, 1 GB storage.<br>
+      You personally will use maybe 200–500 reads/day. A spike to 10,000+ = suspicious.
+    </div>
+  </div>
+
+  <!-- ══ STEP 6 ══ -->
+  <div class="step-card" id="step6">
+    <div class="step-header">
+      <div class="step-num">6</div>
+      <div class="step-meta">
+        <div class="step-label">GitHub Settings</div>
+        <div class="step-title">Enable GitHub Security Scanning</div>
+        <div class="step-sub">GitHub will email you if you accidentally commit any passwords or secrets to your repo.</div>
+      </div>
+    </div>
+    <div class="priority-badge medium">🔵 RECOMMENDED</div>
+
+    <div class="instruction-list">
+      <div class="instruction">
+        <div class="instruction-num">1</div>
+        <div class="instruction-body">Go to your <b>cashflow</b> repo on GitHub → click <b>Settings</b> tab</div>
+      </div>
+      <div class="instruction">
+        <div class="instruction-num">2</div>
+        <div class="instruction-body">Left sidebar → <b>Code security and analysis</b></div>
+      </div>
+      <div class="instruction">
+        <div class="instruction-num">3</div>
+        <div class="instruction-body">Enable all of these:
+          <ul style="margin:8px 0 0 20px;font-size:.84rem">
+            <li>✅ <b>Dependency graph</b></li>
+            <li>✅ <b>Dependabot alerts</b></li>
+            <li>✅ <b>Secret scanning</b> — alerts you if any API key is found in your commits</li>
+          </ul>
+        </div>
+      </div>
+      <div class="instruction">
+        <div class="instruction-num">4</div>
+        <div class="instruction-body">
+          Also make sure your repo is set to <b>Public</b> (required for GitHub Pages free tier) but confirm the <b>only file</b> in the repo is your app code — no <code>.env</code> files, no config files with real keys.
+          <div class="instruction-note">Your Firebase config is stored in the browser's localStorage, NOT in any file in your GitHub repo. That is correct and safe.</div>
+        </div>
+      </div>
+      <div class="instruction">
+        <div class="instruction-num">5</div>
+        <div class="instruction-body">Upload the <b>_headers</b> file (included in your download) to your GitHub repo alongside index.html. This adds browser-level security headers to every page load.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ STEP 7 ══ -->
+  <div class="step-card" id="step7">
+    <div class="step-header">
+      <div class="step-num">7</div>
+      <div class="step-meta">
+        <div class="step-label">Your Google Account</div>
+        <div class="step-title">Secure Your Google Account (Master Key)</div>
+        <div class="step-sub">Your Google account IS your login. If it's compromised, everything is compromised. This takes 3 minutes.</div>
+      </div>
+    </div>
+    <div class="priority-badge critical">🔴 CRITICAL</div>
+
+    <div class="instruction-list">
+      <div class="instruction">
+        <div class="instruction-num">1</div>
+        <div class="instruction-body">Go to <a href="https://myaccount.google.com/security" target="_blank">myaccount.google.com/security</a></div>
+      </div>
+      <div class="instruction">
+        <div class="instruction-num">2</div>
+        <div class="instruction-body">
+          Under <b>"How you sign in to Google"</b> → click <b>2-Step Verification</b> → turn it ON.<br>
+          Use <b>Google Authenticator app</b> or <b>a physical security key</b> — not SMS if possible (SMS can be SIM-swapped).
+          <div class="instruction-note">2FA means even if someone gets your password, they can't sign in without your phone.</div>
+        </div>
+      </div>
+      <div class="instruction">
+        <div class="instruction-num">3</div>
+        <div class="instruction-body">Under <b>"Your devices"</b> — review the list. If you see any device you don't recognise, click it → <b>Sign out</b>.</div>
+      </div>
+      <div class="instruction">
+        <div class="instruction-num">4</div>
+        <div class="instruction-body">Under <b>"Third-party apps with account access"</b> — review the list. Remove anything you don't recognise.</div>
+      </div>
+      <div class="instruction">
+        <div class="instruction-num">5</div>
+        <div class="instruction-body">Run Google's <a href="https://myaccount.google.com/security-checkup" target="_blank">Security Checkup</a> — it takes 2 minutes and tells you exactly what to fix.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ STEP 8 ══ -->
+  <div class="step-card" id="step8">
+    <div class="step-header">
+      <div class="step-num">8</div>
+      <div class="step-meta">
+        <div class="step-label">Ongoing Monitoring</div>
+        <div class="step-title">How to Know If You've Been Hacked</div>
+        <div class="step-sub">Check these 4 places. Takes 3 minutes once a month.</div>
+      </div>
+    </div>
+    <div class="priority-badge medium">🔵 MONTHLY HABIT</div>
+
+    <div class="monitor-grid">
+      <div class="monitor-card">
+        <div class="monitor-card-title">👤 Firebase Auth Users</div>
+        <p>Firebase Console → Authentication → Users<br><br><b>You should only see yourself</b> (1 Google account). Unknown emails = someone got in.</p>
+      </div>
+      <div class="monitor-card">
+        <div class="monitor-card-title">📊 Firestore Usage</div>
+        <p>Firebase Console → Firestore → Usage<br><br>Normal: ~200–500 reads/day. A spike to <b>5,000+</b> when you're not using the app = suspicious.</p>
+      </div>
+      <div class="monitor-card">
+        <div class="monitor-card-title">💸 Billing</div>
+        <p>console.cloud.google.com → Billing<br><br>You should always see <b>$0.00</b>. Any charge = abuse is happening.</p>
+      </div>
+      <div class="monitor-card">
+        <div class="monitor-card-title">🔐 In-App Security Log</div>
+        <p>CashFlow app → Settings → Security Centre<br><br>See every sign-in, edit, and suspicious event. Also run the <b>Security Check</b> button.</p>
+      </div>
+    </div>
+
+    <div style="margin-top:16px">
+      <div class="step-label" style="margin-bottom:10px">WHERE TO LOOK IN FIREBASE CONSOLE — STEP BY STEP</div>
+      <div class="instruction-list">
+        <div class="instruction">
+          <div class="instruction-num">1</div>
+          <div class="instruction-body"><b>Check for unknown users:</b> Firebase Console → Authentication → Users tab → count the rows. Should be exactly 1 (you).</div>
+        </div>
+        <div class="instruction">
+          <div class="instruction-num">2</div>
+          <div class="instruction-body"><b>Check read/write counts:</b> Firebase Console → Firestore Database → Usage tab → look at the daily graph. Normal is a flat low line.</div>
+        </div>
+        <div class="instruction">
+          <div class="instruction-num">3</div>
+          <div class="instruction-body"><b>Check API usage:</b> Google Cloud Console → APIs &amp; Services → Dashboard → look at "Requests" numbers for Cloud Firestore API.</div>
+        </div>
+        <div class="instruction">
+          <div class="instruction-num">4</div>
+          <div class="instruction-body"><b>Check billing:</b> Google Cloud Console → Billing → Overview. Should say $0.00 under "Cost to date this month".</div>
+        </div>
+        <div class="instruction">
+          <div class="instruction-num">5</div>
+          <div class="instruction-body"><b>Check your Google account:</b> myaccount.google.com → Security → "Recent security activity". Look for sign-ins from unknown locations.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ STEP 9 ══ -->
+  <div class="step-card" id="step9">
+    <div class="step-header">
+      <div class="step-num">9</div>
+      <div class="step-meta">
+        <div class="step-label">Emergency Response</div>
+        <div class="step-title">If You Think You've Been Hacked — Do This NOW</div>
+        <div class="step-sub">Act fast. Follow these steps in order.</div>
+      </div>
+    </div>
+    <div class="priority-badge danger" style="background:#FEE2E2;color:#991B1B">🚨 EMERGENCY PLAN</div>
+
+    <div class="hack-steps">
+      <div class="hack-step">
+        <div class="hack-step-num">1</div>
+        <div class="hack-step-body">
+          <div class="hack-step-title">Sign out of CashFlow immediately</div>
+          <div class="hack-step-desc">Open the app → Settings → Security Centre → tap <b>"Emergency Sign Out"</b>. Or just close the app.</div>
+        </div>
+      </div>
+      <div class="hack-step">
+        <div class="hack-step-num">2</div>
+        <div class="hack-step-body">
+          <div class="hack-step-title">Change your Google account password</div>
+          <div class="hack-step-desc">Go to <a href="https://myaccount.google.com/security" target="_blank">myaccount.google.com</a> → Security → Password → change it to something strong. This invalidates all existing sessions everywhere.</div>
+        </div>
+      </div>
+      <div class="hack-step">
+        <div class="hack-step-num">3</div>
+        <div class="hack-step-body">
+          <div class="hack-step-title">Delete any unknown Firebase users</div>
+          <div class="hack-step-desc">Firebase Console → Authentication → Users → if you see any email that isn't you → click the 3-dot menu → <b>Delete account</b>.</div>
+        </div>
+      </div>
+      <div class="hack-step">
+        <div class="hack-step-num">4</div>
+        <div class="hack-step-body">
+          <div class="hack-step-title">Revoke and regenerate your API key</div>
+          <div class="hack-step-desc">Google Cloud Console → APIs &amp; Services → Credentials → click your Browser key → click <b>"Regenerate key"</b> → confirm. Then open your CashFlow app → paste new config in Setup screen.</div>
+        </div>
+      </div>
+      <div class="hack-step">
+        <div class="hack-step-num">5</div>
+        <div class="hack-step-body">
+          <div class="hack-step-title">Re-verify your Firestore rules</div>
+          <div class="hack-step-desc">Firebase Console → Firestore → Rules → make sure the rules from Step 1 of this guide are still there and not modified.</div>
+        </div>
+      </div>
+      <div class="hack-step">
+        <div class="hack-step-num">6</div>
+        <div class="hack-step-body">
+          <div class="hack-step-title">Check what data was accessed</div>
+          <div class="hack-step-desc">Firebase Console → Firestore → Usage tab → check the timeline. Firebase does not log individual document reads by default, but usage volume shows if data was extracted.</div>
+        </div>
+      </div>
+      <div class="hack-step">
+        <div class="hack-step-num">7</div>
+        <div class="hack-step-body">
+          <div class="hack-step-title">Enable 2FA if you haven't</div>
+          <div class="hack-step-desc">myaccount.google.com → Security → 2-Step Verification → turn it ON. This is the single most effective thing you can do.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECURITY SUMMARY TABLE -->
+  <div class="step-card" style="border:2px solid var(--teal)">
+    <div class="step-header" style="margin-bottom:12px">
+      <div class="step-num" style="background:var(--teal)">✓</div>
+      <div class="step-meta">
+        <div class="step-title">Security Layer Summary</div>
+        <div class="step-sub">What each layer protects against</div>
+      </div>
+    </div>
+    <table class="compare-table">
+      <tr>
+        <th>Protection</th>
+        <th>Blocks What Attack?</th>
+        <th>Status</th>
+      </tr>
+      <tr>
+        <td><b>Firestore Rules</b></td>
+        <td>Anyone reading your data with stolen API key</td>
+        <td><span class="badge amber">Do Step 1</span></td>
+      </tr>
+      <tr>
+        <td><b>API Key Restriction</b></td>
+        <td>Key working from attacker's own app/script</td>
+        <td><span class="badge amber">Do Step 2</span></td>
+      </tr>
+      <tr>
+        <td><b>App Check</b></td>
+        <td>Bots and automated scripts using your Firebase</td>
+        <td><span class="badge amber">Do Step 3</span></td>
+      </tr>
+      <tr>
+        <td><b>Auth Domain Lock</b></td>
+        <td>Sign-ins from cloned versions of your app</td>
+        <td><span class="badge amber">Do Step 4</span></td>
+      </tr>
+      <tr>
+        <td><b>Budget Alerts</b></td>
+        <td>Surprise abuse charges — early warning system</td>
+        <td><span class="badge amber">Do Step 5</span></td>
+      </tr>
+      <tr>
+        <td><b>Google 2FA</b></td>
+        <td>Account takeover even if password is stolen</td>
+        <td><span class="badge amber">Do Step 7</span></td>
+      </tr>
+      <tr>
+        <td><b>Session Timeout</b></td>
+        <td>Someone using your phone while you're away</td>
+        <td><span class="badge green">Built into app ✓</span></td>
+      </tr>
+      <tr>
+        <td><b>Rate Limiting</b></td>
+        <td>Automated spam/flood attacks on your account</td>
+        <td><span class="badge green">Built into app ✓</span></td>
+      </tr>
+      <tr>
+        <td><b>Input Sanitization</b></td>
+        <td>XSS injection through note/name fields</td>
+        <td><span class="badge green">Built into app ✓</span></td>
+      </tr>
+      <tr>
+        <td><b>CSP Headers</b></td>
+        <td>Malicious scripts loading in your app</td>
+        <td><span class="badge green">Built into app ✓</span></td>
+      </tr>
+      <tr>
+        <td><b>Security Audit Log</b></td>
+        <td>Undetected access — you can see all activity</td>
+        <td><span class="badge green">Built into app ✓</span></td>
+      </tr>
+      <tr>
+        <td><b>Console Honeypot</b></td>
+        <td>Social engineering via browser console</td>
+        <td><span class="badge green">Built into app ✓</span></td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- MONTHLY CHECKLIST -->
+  <div class="step-card">
+    <div class="step-header" style="margin-bottom:16px">
+      <div class="step-num" style="background:#7C3AED">📅</div>
+      <div class="step-meta">
+        <div class="step-title">Monthly Security Checklist</div>
+        <div class="step-sub">Bookmark this. Takes 5 minutes once a month.</div>
+      </div>
+    </div>
+    <div class="checklist" id="monthly-checklist">
+      <div class="check-item">
+        <div class="check-box" onclick="toggleCheck(this)"></div>
+        <div class="check-label">Firebase → Authentication → Users: only my account exists</div>
+      </div>
+      <div class="check-item">
+        <div class="check-box" onclick="toggleCheck(this)"></div>
+        <div class="check-label">Firebase → Firestore → Usage: no unusual spikes in reads/writes</div>
+      </div>
+      <div class="check-item">
+        <div class="check-box" onclick="toggleCheck(this)"></div>
+        <div class="check-label">Google Cloud → Billing: cost is $0.00 this month</div>
+      </div>
+      <div class="check-item">
+        <div class="check-box" onclick="toggleCheck(this)"></div>
+        <div class="check-label">CashFlow → Settings → Security Centre → Run Security Check: all green</div>
+      </div>
+      <div class="check-item">
+        <div class="check-box" onclick="toggleCheck(this)"></div>
+        <div class="check-label">myaccount.google.com → Security → Recent activity: no unknown sign-ins</div>
+      </div>
+      <div class="check-item">
+        <div class="check-box" onclick="toggleCheck(this)"></div>
+        <div class="check-label">myaccount.google.com → Your devices: no unknown devices listed</div>
+      </div>
+      <div class="check-item">
+        <div class="check-box" onclick="toggleCheck(this)"></div>
+        <div class="check-label">Firebase → Firestore → Rules: rules from Step 1 are still correct and published</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end container -->
+
+<div class="footer">
+  <strong>CashFlow Security Guide</strong> · Keep this document saved locally.<br>
+  Your data is protected by Firebase, Google OAuth, and multiple app-level security layers.<br><br>
+  Questions? Update your app at github.com and the security improvements update automatically.
+</div>
+
+<script>
+function toggleCheck(el){
+  const isChecked = el.classList.toggle('checked');
+  el.textContent = isChecked ? '✓' : '';
+  const label = el.nextElementSibling;
+  label.classList.toggle('checked-text', isChecked);
+}
+// Smooth scroll for TOC links
+document.querySelectorAll('a[href^="#"]').forEach(a=>{
+  a.addEventListener('click',e=>{
+    e.preventDefault();
+    const target=document.querySelector(a.getAttribute('href'));
+    if(target)target.scrollIntoView({behavior:'smooth',block:'start'});
+  });
+});
+</script>
+</body>
+</html>

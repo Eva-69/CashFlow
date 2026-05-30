@@ -14,7 +14,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <!-- Security: Content Security Policy - Fixed for Google Auth -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://apis.google.com https://www.gstatic.com https://www.google.com https://www.recaptcha.net https://securetoken.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://www.gstatic.com; font-src https://fonts.gstatic.com https://www.gstatic.com; img-src 'self' data: blob: https://lh3.googleusercontent.com https://www.gstatic.com https://*.googleapis.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.cloudfunctions.net https://apis.google.com https://securetoken.googleapis.com https://identitytoolkit.googleapis.com wss://*.firebaseio.com; frame-src https://www.google.com https://accounts.google.com https://www.recaptcha.net https://*.firebaseapp.com; frame-ancestors 'none';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://apis.google.com https://www.gstatic.com https://www.google.com https://www.recaptcha.net https://securetoken.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://www.gstatic.com; font-src https://fonts.gstatic.com https://www.gstatic.com; img-src 'self' data: blob: https://lh3.googleusercontent.com https://www.gstatic.com https://*.googleapis.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.cloudfunctions.net https://apis.google.com https://securetoken.googleapis.com https://identitytoolkit.googleapis.com https://open.er-api.com wss://*.firebaseio.com; frame-src https://www.google.com https://accounts.google.com https://www.recaptcha.net https://*.firebaseapp.com; frame-ancestors 'none';">
 <meta http-equiv="X-Content-Type-Options" content="nosniff">
 <meta http-equiv="X-Frame-Options" content="DENY">
 <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
@@ -518,6 +518,23 @@ input,select,textarea{font-family:inherit;outline:none;border:none;background:no
 .audit-event{font-size:.82rem;font-weight:700}
 .audit-time{font-size:.72rem;color:var(--muted);margin-top:1px}
 
+/* ── CURRENCY ── */
+.cur-hint{font-size:.74rem;color:var(--teal2);font-weight:600;text-align:center;margin-top:4px;min-height:14px}
+.cur-row{display:flex;align-items:center;gap:12px;padding:13px;border-radius:var(--radius-sm);
+  border:2px solid var(--border);margin-bottom:8px;cursor:pointer;transition:.15s;background:var(--card)}
+.cur-row:active{transform:scale(.98)}
+.cur-row.selected{border-color:var(--teal);background:var(--teal-dim)}
+.cur-row-flag{font-size:1.5rem}
+.cur-row-info{flex:1}
+.cur-row-name{font-size:.9rem;font-weight:700;color:var(--navy)}
+.cur-row-rate{font-size:.74rem;color:var(--muted);margin-top:1px;font-family:'DM Mono',monospace}
+.cur-row-check{color:var(--teal);font-size:1.1rem;font-weight:800}
+.rate-line{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:.84rem}
+.rate-line:last-child{border-bottom:none}
+.rate-line .v{font-family:'DM Mono',monospace;font-weight:700}
+.code-box{background:#0F1F3D;color:#9FE8D8;font-family:'DM Mono',monospace;font-size:.72rem;
+  padding:12px;border-radius:10px;line-height:1.55;white-space:pre-wrap;word-break:break-word;
+  max-height:280px;overflow:auto;margin:10px 0}
 .mono{font-family:'DM Mono',monospace}
 .text-green{color:var(--green)}
 .text-red{color:var(--red)}
@@ -765,6 +782,12 @@ input,select,textarea{font-family:inherit;outline:none;border:none;background:no
     </div>
     <div style="margin-bottom:18px">
       <div class="settings-section-title">Finance Settings</div>
+      <div class="settings-item" onclick="openCurrencyModal()">
+        <div class="s-icon" style="background:#D1FAE5">💱</div>
+        <div class="s-info"><div class="s-title">Currency</div><div class="s-sub">Record &amp; view in your currency · live rates</div></div>
+        <div class="settings-val" id="s-currency-val">RM · MYR</div>
+        <div class="s-arrow">›</div>
+      </div>
       <div class="settings-item" onclick="openTargetModal()">
         <div class="s-icon" style="background:#FEF3C7">🎯</div>
         <div class="s-info"><div class="s-title">Yearly Investment Target</div><div class="s-sub">Set your annual growth goal</div></div>
@@ -819,6 +842,23 @@ input,select,textarea{font-family:inherit;outline:none;border:none;background:no
           <div class="s-title">Run Security Check</div>
           <div class="s-sub">Verify your account is secure</div>
         </div>
+        <div class="s-arrow">›</div>
+      </div>
+      <div class="settings-item" onclick="openRulesModal()">
+        <div class="s-icon" style="background:#FEF3C7">📜</div>
+        <div class="s-info">
+          <div class="s-title">Firestore Security Rules</div>
+          <div class="s-sub">Lock your database to only you — copy &amp; paste</div>
+        </div>
+        <div class="s-arrow">›</div>
+      </div>
+      <div class="settings-item" onclick="openAppCheckModal()">
+        <div class="s-icon" style="background:#DBEAFE">🤖</div>
+        <div class="s-info">
+          <div class="s-title">App Check (reCAPTCHA)</div>
+          <div class="s-sub">Block bots/scrapers from your API</div>
+        </div>
+        <div class="settings-val" id="s-appcheck-val">Off</div>
         <div class="s-arrow">›</div>
       </div>
     </div>
@@ -917,9 +957,10 @@ input,select,textarea{font-family:inherit;outline:none;border:none;background:no
       <button class="type-btn income" id="btn-inc" onclick="setAddType('income')">💰 Income</button>
     </div>
     <div class="amount-wrap">
-      <span class="amount-rm">RM</span>
-      <input type="number" class="amount-input" id="add-amount" placeholder="0.00" min="0" step="0.01" inputmode="decimal">
+      <span class="amount-rm cur-sym">RM</span>
+      <input type="number" class="amount-input" id="add-amount" placeholder="0.00" min="0" step="0.01" inputmode="decimal" oninput="updateAmtHint('add-amount','add-amount-hint')">
     </div>
+    <div class="cur-hint" id="add-amount-hint"></div>
     <div class="form-field">
       <label class="form-label">Category</label>
       <div class="cat-grid" id="add-cat-grid"></div>
@@ -1016,8 +1057,9 @@ input,select,textarea{font-family:inherit;outline:none;border:none;background:no
     </div>
     <div class="form-row">
       <div class="form-field">
-        <label class="form-label">Initial Amount (RM)</label>
-        <input type="number" class="form-input" id="inv-initial" placeholder="10000.00" min="0" step="0.01">
+        <label class="form-label"><span class="cur-label">Initial Amount</span> (<span class="cur-code">RM</span>)</label>
+        <input type="number" class="form-input" id="inv-initial" placeholder="10000.00" min="0" step="0.01" oninput="updateAmtHint('inv-initial','inv-initial-hint')">
+        <div class="cur-hint" id="inv-initial-hint"></div>
       </div>
       <div class="form-field">
         <label class="form-label">Start Date</label>
@@ -1079,9 +1121,10 @@ input,select,textarea{font-family:inherit;outline:none;border:none;background:no
     <div class="modal-title">Update Investment Value</div>
     <div class="modal-subtitle" id="snap-inv-name">Investment Name</div>
     <div class="amount-wrap">
-      <span class="amount-rm">RM</span>
-      <input type="number" class="amount-input" id="snap-value" placeholder="0.00" min="0" step="0.01" inputmode="decimal">
+      <span class="amount-rm cur-sym">RM</span>
+      <input type="number" class="amount-input" id="snap-value" placeholder="0.00" min="0" step="0.01" inputmode="decimal" oninput="updateAmtHint('snap-value','snap-value-hint')">
     </div>
+    <div class="cur-hint" id="snap-value-hint"></div>
     <div class="form-field">
       <label class="form-label">Date of this value</label>
       <input type="date" class="form-input" id="snap-date">
@@ -1110,8 +1153,9 @@ input,select,textarea{font-family:inherit;outline:none;border:none;background:no
     </div>
     <div class="form-row">
       <div class="form-field">
-        <label class="form-label">Target Amount (RM)</label>
-        <input type="number" class="form-input" id="goal-target" placeholder="50000">
+        <label class="form-label"><span class="cur-label">Target Amount</span> (<span class="cur-code">RM</span>)</label>
+        <input type="number" class="form-input" id="goal-target" placeholder="50000" oninput="updateAmtHint('goal-target','goal-target-hint')">
+        <div class="cur-hint" id="goal-target-hint"></div>
       </div>
       <div class="form-field">
         <label class="form-label">Deadline</label>
@@ -1119,8 +1163,9 @@ input,select,textarea{font-family:inherit;outline:none;border:none;background:no
       </div>
     </div>
     <div class="form-field">
-      <label class="form-label">Current Amount (RM)</label>
-      <input type="number" class="form-input" id="goal-current" placeholder="0.00" step="0.01">
+      <label class="form-label"><span class="cur-label">Current Amount</span> (<span class="cur-code">RM</span>)</label>
+      <input type="number" class="form-input" id="goal-current" placeholder="0.00" step="0.01" oninput="updateAmtHint('goal-current','goal-current-hint')">
+      <div class="cur-hint" id="goal-current-hint"></div>
       <div style="font-size:.74rem;color:var(--muted);margin-top:5px">Update this manually each time you check progress</div>
     </div>
     <button class="btn btn-navy" onclick="saveGoal()">Save Goal</button>
@@ -1151,6 +1196,78 @@ input,select,textarea{font-family:inherit;outline:none;border:none;background:no
       💡 Common targets: ASB gives ~4-5%, EPF gives ~5-6%, diversified stocks target 8-12%, aggressive crypto varies widely.
     </div>
     <button class="btn btn-navy" onclick="saveYearlyTarget()">Save Target</button>
+    <div style="height:6px"></div>
+  </div>
+</div>
+
+<!-- ══ CURRENCY MODAL ══ -->
+<div class="modal-overlay" id="currency-modal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">💱 Currency</div>
+    <div class="modal-subtitle">Pick the currency you record &amp; view your money in</div>
+    <div id="currency-options"></div>
+    <div class="card" style="box-shadow:none;border:1px solid var(--border);margin-top:6px">
+      <div class="sec-head">
+        <div class="sec-title">📈 Live Exchange Rates</div>
+        <div class="sec-link" onclick="refreshRatesNow()">↻ Refresh</div>
+      </div>
+      <div id="currency-rate-lines"></div>
+      <div style="font-size:.7rem;color:var(--muted);margin-top:8px" id="currency-rate-time">—</div>
+    </div>
+    <div style="font-size:.74rem;color:var(--muted);line-height:1.6;margin-top:6px">
+      Your saved amounts stay anchored in <b id="cur-base-note">MYR</b>. Switching display currency
+      converts everything live — and what you type in is converted back automatically, so your
+      history and totals always stay correct.
+    </div>
+    <button class="btn btn-navy mt12" onclick="closeModal('currency-modal')">Done</button>
+    <div style="height:6px"></div>
+  </div>
+</div>
+
+<!-- ══ APP CHECK MODAL ══ -->
+<div class="modal-overlay" id="appcheck-modal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🤖 App Check</div>
+    <div class="modal-subtitle">Stops bots &amp; scrapers from using your API</div>
+    <div style="background:#f5f7fb;border-radius:var(--radius-sm);padding:14px;font-size:.8rem;color:var(--text);line-height:1.7;border:1px solid var(--border);margin-bottom:14px">
+      App Check makes Google verify every request comes from <b>your real app</b> (via invisible
+      reCAPTCHA), so a stolen API key alone is useless to an attacker.
+      <ol style="padding-left:18px;margin-top:8px">
+        <li>Firebase Console → <b>App Check</b> → your web app → <b>reCAPTCHA v3</b></li>
+        <li>Register &amp; copy the <b>site key</b></li>
+        <li>Paste it below &amp; Save (then <b>Enforce</b> Firestore in App Check)</li>
+      </ol>
+    </div>
+    <div class="form-field">
+      <label class="form-label">reCAPTCHA v3 Site Key</label>
+      <input type="text" class="form-input" id="appcheck-key" placeholder="6Lc..." autocomplete="off" spellcheck="false">
+    </div>
+    <button class="btn btn-navy" onclick="saveAppCheckKey()">Save &amp; Activate</button>
+    <button class="btn btn-ghost mt12" onclick="clearAppCheckKey()">Remove key</button>
+    <div style="height:6px"></div>
+  </div>
+</div>
+
+<!-- ══ FIRESTORE RULES MODAL ══ -->
+<div class="modal-overlay" id="rules-modal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📜 Firestore Security Rules</div>
+    <div class="modal-subtitle">The #1 thing protecting your data — set this once</div>
+    <div style="background:#FEF3C7;border-radius:var(--radius-sm);padding:13px;font-size:.8rem;color:#92400E;line-height:1.6;border:1.5px solid #FDE68A;margin-bottom:12px">
+      <b>Important:</b> A Firebase API key is <b>not a secret</b> — it's safe to be public. What actually
+      keeps strangers out of your data are these rules. They make Firestore reject anyone who isn't
+      <b>you</b>, signed in with your Google account.
+    </div>
+    <div style="font-size:.8rem;font-weight:700;color:var(--navy)">Steps</div>
+    <div style="font-size:.78rem;color:var(--text);line-height:1.7;margin:4px 0 8px">
+      Firebase Console → <b>Firestore Database</b> → <b>Rules</b> tab → replace everything with the code below → <b>Publish</b>.
+    </div>
+    <div class="code-box" id="rules-code"></div>
+    <button class="btn btn-teal" onclick="copyRules()">📋 Copy Rules</button>
+    <button class="btn btn-navy mt12" onclick="closeModal('rules-modal')">Done</button>
     <div style="height:6px"></div>
   </div>
 </div>
@@ -1232,7 +1349,8 @@ const INV_TYPE_LABELS = {
 const S = {
   user:null, db:null, auth:null,
   transactions:[], customCats:[], investments:[], invSnapshots:[], goals:[],
-  userSettings:{yearlyTarget:10, budgets:{}},
+  userSettings:{yearlyTarget:10, budgets:{}, baseCurrency:'MYR', displayCurrency:'MYR'},
+  rates:null, ratesTime:null,
   view:'dashboard', addType:'expense', selCatId:null,
   editingTxId:null, editingCatId:null, editingInvId:null, editingGoalId:null,
   viewingInvId:null, catType:'expense',
@@ -1567,7 +1685,8 @@ function setupListeners(){
     renderCurrentView();
   }));
   push(settingsRef().onSnapshot(d=>{
-    if(d.exists) S.userSettings={yearlyTarget:10,budgets:{},...d.data()};
+    if(d.exists) S.userSettings={yearlyTarget:10,budgets:{},baseCurrency:'MYR',displayCurrency:'MYR',...d.data()};
+    refreshCurrencyUI();
     renderCurrentView();
   }));
 }
@@ -1580,17 +1699,88 @@ const allCats=()=>[...DEFAULT_CATS,...S.customCats];
 const getCat=(id)=>allCats().find(c=>c.id===id)||{name:'Unknown',icon:'❓',color:'#ccc'};
 
 // ══════════════════════════════════════════
+//  CURRENCY ENGINE
+// ══════════════════════════════════════════
+// Stored amounts are kept in the BASE currency (default MYR — the unit all
+// existing data was recorded in). The user can pick any DISPLAY currency; the
+// whole app converts base→display live for viewing, and converts what you type
+// display→base before saving, so historical math always stays consistent.
+const CURRENCIES = {
+  MYR:{code:'MYR',symbol:'RM', name:'Malaysian Ringgit', locale:'en-MY', flag:'🇲🇾'},
+  USD:{code:'USD',symbol:'$',  name:'US Dollar',         locale:'en-US', flag:'🇺🇸'},
+  USDT:{code:'USDT',symbol:'₮', name:'Tether (USDT)',    locale:'en-US', flag:'🪙'},
+  SGD:{code:'SGD',symbol:'S$', name:'Singapore Dollar',  locale:'en-SG', flag:'🇸🇬'},
+  CNY:{code:'CNY',symbol:'¥',  name:'Chinese Yuan',      locale:'zh-CN', flag:'🇨🇳'},
+};
+// Approximate offline fallback rates (units per 1 USD). USDT is pegged 1:1 to USD.
+// These are only used if the device is offline AND no cached live rate exists.
+const FALLBACK_RATES = {USD:1, USDT:1, SGD:1.35, MYR:4.7, CNY:7.2};
+
+function getBaseCode(){ return (S.userSettings && S.userSettings.baseCurrency) || 'MYR'; }
+function getDisplayCode(){ return (S.userSettings && S.userSettings.displayCurrency) || 'MYR'; }
+function getDisplayCur(){ return CURRENCIES[getDisplayCode()] || CURRENCIES.MYR; }
+
+// Convert an amount between two currency codes using current rates (units per USD).
+function convert(amount, from, to){
+  if(!isFinite(amount)) return 0;
+  if(from===to) return amount;
+  const r = S.rates || FALLBACK_RATES;
+  const rf = r[from], rt = r[to];
+  if(!rf || !rt) return amount;          // missing rate → no conversion (safe)
+  return amount * (rt / rf);
+}
+// Convert a value typed in the DISPLAY currency back into BASE currency for storage.
+function toBase(displayAmount){ return convert(displayAmount, getDisplayCode(), getBaseCode()); }
+// Convert a stored BASE amount into the DISPLAY currency (for pre-filling edit forms).
+function fromBase(baseAmount){ return Math.round(convert(baseAmount, getBaseCode(), getDisplayCode())*100)/100; }
+
+// Fetch live FX rates (no API key needed). Cached 6h in localStorage; falls back
+// to last cache, then to baked-in approximate rates. Network domain is allow-listed
+// in the Content-Security-Policy above.
+async function loadRates(force){
+  try{
+    const cached = JSON.parse(localStorage.getItem('cf_rates')||'null');
+    if(cached && cached.rates){ S.rates = cached.rates; S.ratesTime = cached.apiTime || cached.ts; }
+    const fresh = cached && (Date.now() - cached.ts < 6*3600*1000);
+    if(fresh && !force) return S.rates;
+  }catch(e){}
+  if(!S.rates) S.rates = {...FALLBACK_RATES};
+  try{
+    const res = await fetch('https://open.er-api.com/v6/latest/USD', {cache:'no-store'});
+    const j = await res.json();
+    if(j && j.rates){
+      const rates = {
+        USD:1, USDT:1,
+        SGD: j.rates.SGD || FALLBACK_RATES.SGD,
+        MYR: j.rates.MYR || FALLBACK_RATES.MYR,
+        CNY: j.rates.CNY || FALLBACK_RATES.CNY,
+      };
+      S.rates = rates;
+      S.ratesTime = j.time_last_update_utc || new Date().toISOString();
+      localStorage.setItem('cf_rates', JSON.stringify({ts:Date.now(), apiTime:S.ratesTime, rates}));
+      renderCurrentView();
+      if(S.view==='currency-rates' || document.getElementById('currency-modal')?.classList.contains('open')) renderCurrencyModal();
+    }
+  }catch(e){ secLog('FX rate fetch failed — using cached/offline rates','warn'); }
+  return S.rates;
+}
+
+// ══════════════════════════════════════════
 //  HELPERS – FORMAT
 // ══════════════════════════════════════════
+// fmtRM kept as the name for compatibility, but now currency-aware:
+// input is a BASE-currency amount, output is formatted in the DISPLAY currency.
 const fmtRM=(n,abs=true)=>{
-  const v=abs?Math.abs(n):n;
-  return 'RM '+v.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const cur=getDisplayCur();
+  const v=convert(abs?Math.abs(n):n, getBaseCode(), cur.code);
+  return cur.symbol+' '+v.toLocaleString(cur.locale,{minimumFractionDigits:2,maximumFractionDigits:2});
 };
 const fmtRMShort=(n)=>{
-  const v=Math.abs(n);
-  if(v>=1000000)return 'RM'+(v/1000000).toFixed(1)+'M';
-  if(v>=1000)return 'RM'+(v/1000).toFixed(1)+'k';
-  return fmtRM(n);
+  const cur=getDisplayCur();
+  const v=convert(Math.abs(n), getBaseCode(), cur.code);
+  if(v>=1000000)return cur.symbol+(v/1000000).toFixed(1)+'M';
+  if(v>=1000)return cur.symbol+(v/1000).toFixed(1)+'k';
+  return cur.symbol+' '+v.toLocaleString(cur.locale,{minimumFractionDigits:2,maximumFractionDigits:2});
 };
 const fmtPct=(p,digits=1)=>(p>0?'+':'')+p.toFixed(digits)+'%';
 const fmtDate=(ts)=>{const d=tsToDate(ts);return d.toLocaleDateString('en-MY',{day:'2-digit',month:'short',year:'numeric'})};
@@ -2037,6 +2227,7 @@ function renderSettings(){
   document.getElementById('s-target-val').textContent=(S.userSettings.yearlyTarget||10)+'%';
   const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
   if(isIOS&&!window.navigator.standalone)document.getElementById('install-ios-settings').style.display='block';
+  refreshCurrencyUI();
 }
 function renderCategories(){
   const custom=document.getElementById('custom-cat-list');
@@ -2065,10 +2256,10 @@ function renderBudgets(){
       <div class="tx-icon" style="background:${c.color}22">${c.icon}</div>
       <div style="flex:1;font-size:.86rem;font-weight:700">${c.name}</div>
       <div class="budget-input-wrap">
-        <span class="budget-rm">RM</span>
-        <input type="number" class="budget-val-input" id="budget-${c.id}" 
+        <span class="budget-rm cur-sym">${getDisplayCur().symbol}</span>
+        <input type="number" class="budget-val-input" id="budget-${c.id}"
           placeholder="No limit" min="0" step="10"
-          value="${budgets[c.id]>0?budgets[c.id]:''}">
+          value="${budgets[c.id]>0?fromBase(budgets[c.id]):''}">
       </div>
     </div>`).join('');
 }
@@ -2077,7 +2268,7 @@ async function saveBudgets(){
   allCats().filter(c=>c.type==='expense').forEach(c=>{
     const el=document.getElementById('budget-'+c.id);
     const v=parseFloat(el?.value||'0');
-    if(v>0)budgets[c.id]=v;
+    if(v>0)budgets[c.id]=Math.round(toBase(v)*100)/100;
   });
   try{
     await settingsRef().set({...S.userSettings,budgets},{merge:true});
@@ -2155,7 +2346,8 @@ async function saveTransaction(){
   if(!dateVal){showToast('Select a date','err');return}
   const dt=new Date(dateVal+'T'+timeVal);
   if(isNaN(dt.getTime())){showToast('Invalid date/time','err');return}
-  const data={type:S.addType,amount,categoryId:S.selCatId,note,
+  const amountBase=Math.round(toBase(amount)*100)/100;   // store in base currency
+  const data={type:S.addType,amount:amountBase,categoryId:S.selCatId,note,
     date:firebase.firestore.Timestamp.fromDate(dt),
     createdAt:firebase.firestore.FieldValue.serverTimestamp()};
   try{
@@ -2201,8 +2393,9 @@ async function saveInvestment(){
   if(!name){showToast('Enter a name','err');return}
   if(!initialAmount){showToast('Enter a valid initial amount','err');return}
   if(!dateVal){showToast('Select a start date','err');return}
+  const initialAmountBase=Math.round(toBase(initialAmount)*100)/100;
   const data={name,type:document.getElementById('inv-type').value,icon:S.invSelEmoji,
-    color:S.invSelColor,initialAmount,
+    color:S.invSelColor,initialAmount:initialAmountBase,
     initialDate:firebase.firestore.Timestamp.fromDate(new Date(dateVal)),notes};
   try{
     if(S.editingInvId){ await invRef().doc(S.editingInvId).update(data); secLog('Investment updated'); }
@@ -2224,7 +2417,8 @@ async function saveSnapshot(){
   const dateVal=document.getElementById('snap-date').value;
   if(!value||value<=0){showToast('Enter a value','err');return}
   if(!S.viewingInvId){return}
-  const data={investmentId:S.viewingInvId,value,date:firebase.firestore.Timestamp.fromDate(new Date(dateVal)),notes:document.getElementById('snap-notes').value.trim()};
+  const valueBase=Math.round(toBase(value)*100)/100;
+  const data={investmentId:S.viewingInvId,value:valueBase,date:firebase.firestore.Timestamp.fromDate(new Date(dateVal)),notes:document.getElementById('snap-notes').value.trim()};
   try{
     await snapRef().add(data);
     showToast('Value updated ✓','ok');closeSnapshotModal();
@@ -2243,7 +2437,9 @@ async function saveGoal(){
   const deadline=document.getElementById('goal-deadline').value;
   if(!name){showToast('Enter a goal name','err');return}
   if(!targetAmount||targetAmount<=0){showToast('Enter target amount','err');return}
-  const data={name,icon:S.goalSelEmoji,targetAmount,currentAmount,deadline:deadline||''};
+  const targetBase=Math.round(toBase(targetAmount)*100)/100;
+  const currentBase=Math.round(toBase(currentAmount)*100)/100;
+  const data={name,icon:S.goalSelEmoji,targetAmount:targetBase,currentAmount:currentBase,deadline:deadline||''};
   try{
     if(S.editingGoalId)await goalsRef().doc(S.editingGoalId).update(data);
     else await goalsRef().add(data);
@@ -2271,7 +2467,7 @@ async function saveYearlyTarget(){
 //  EXPORT
 // ══════════════════════════════════════════
 function exportCSV(){
-  const rows=[['Date','Time','Type','Category','Note','Amount (RM)']];
+  const rows=[['Date','Time','Type','Category','Note','Amount ('+getBaseCode()+')']];
   S.transactions.forEach(t=>{
     const d=tsToDate(t.date);const c=getCat(t.categoryId);
     rows.push([d.toLocaleDateString('en-MY'),d.toLocaleTimeString('en-MY'),t.type,c.name,t.note||'',t.amount.toFixed(2)]);
@@ -2293,7 +2489,7 @@ function openAddModal(type='expense',txId=null){
     const t=S.transactions.find(t=>t.id===txId);
     if(t){
       S.addType=t.type;S.selCatId=t.categoryId;
-      document.getElementById('add-amount').value=t.amount;
+      document.getElementById('add-amount').value=fromBase(t.amount);
       document.getElementById('add-note').value=t.note||'';
       const d=tsToDate(t.date);
       document.getElementById('add-date').value=d.toISOString().split('T')[0];
@@ -2307,6 +2503,7 @@ function openAddModal(type='expense',txId=null){
     document.getElementById('add-time').value=now.toTimeString().slice(0,5);
   }
   setAddType(S.addType,false);
+  refreshCurrencyUI();updateAmtHint('add-amount','add-amount-hint');
   document.getElementById('add-modal').classList.add('open');
   setTimeout(()=>document.getElementById('add-amount').focus(),250);
 }
@@ -2350,7 +2547,7 @@ function openInvestModal(invId=null){
     if(inv){
       document.getElementById('inv-name').value=inv.name;
       document.getElementById('inv-type').value=inv.type||'unit_trust';
-      document.getElementById('inv-initial').value=inv.initialAmount||'';
+      document.getElementById('inv-initial').value=inv.initialAmount?fromBase(inv.initialAmount):'';
       const d=tsToDate(inv.initialDate);document.getElementById('inv-date').value=d.toISOString().split('T')[0];
       document.getElementById('inv-notes').value=inv.notes||'';
       S.invSelEmoji=inv.icon||'📊';S.invSelColor=inv.color||'#45B7D1';
@@ -2363,6 +2560,7 @@ function openInvestModal(invId=null){
     document.getElementById('inv-notes').value='';
   }
   renderEmojiGrid('inv-emoji-grid','invSelEmoji');renderColorGrid('inv-color-grid','invSelColor');
+  refreshCurrencyUI();updateAmtHint('inv-initial','inv-initial-hint');
   document.getElementById('invest-modal').classList.add('open');
   // Close detail if open
   document.getElementById('inv-detail-modal').classList.remove('open');
@@ -2374,6 +2572,7 @@ function openSnapshotModal(){
   document.getElementById('snap-value').value='';
   document.getElementById('snap-date').value=new Date().toISOString().split('T')[0];
   document.getElementById('snap-notes').value='';
+  refreshCurrencyUI();updateAmtHint('snap-value','snap-value-hint');
   document.getElementById('snapshot-modal').classList.add('open');
   setTimeout(()=>document.getElementById('snap-value').focus(),250);
 }
@@ -2385,11 +2584,12 @@ function openGoalModal(goalId=null){
   document.getElementById('goal-delete-wrap').style.display=goalId?'block':'none';
   if(goalId){
     const g=S.goals.find(g=>g.id===goalId);
-    if(g){document.getElementById('goal-name').value=g.name;document.getElementById('goal-target').value=g.targetAmount||'';document.getElementById('goal-current').value=g.currentAmount||'';document.getElementById('goal-deadline').value=g.deadline||'';S.goalSelEmoji=g.icon||'🎯'}
+    if(g){document.getElementById('goal-name').value=g.name;document.getElementById('goal-target').value=g.targetAmount?fromBase(g.targetAmount):'';document.getElementById('goal-current').value=g.currentAmount?fromBase(g.currentAmount):'';document.getElementById('goal-deadline').value=g.deadline||'';S.goalSelEmoji=g.icon||'🎯'}
   } else {
     document.getElementById('goal-name').value='';document.getElementById('goal-target').value='';document.getElementById('goal-current').value='';document.getElementById('goal-deadline').value='';
   }
   renderEmojiGrid('goal-emoji-grid','goalSelEmoji');
+  refreshCurrencyUI();updateAmtHint('goal-target','goal-target-hint');updateAmtHint('goal-current','goal-current-hint');
   document.getElementById('goal-modal').classList.add('open');
 }
 function closeGoalModal(){document.getElementById('goal-modal').classList.remove('open');S.editingGoalId=null}
@@ -2399,6 +2599,116 @@ function openTargetModal(){
   document.getElementById('target-modal').classList.add('open');
 }
 function closeModal(id){document.getElementById(id).classList.remove('open')}
+
+// ══════════════════════════════════════════
+//  CURRENCY — UI
+// ══════════════════════════════════════════
+function refreshCurrencyUI(){
+  const cur=getDisplayCur();
+  document.querySelectorAll('.cur-sym').forEach(e=>e.textContent=cur.symbol);
+  document.querySelectorAll('.cur-code').forEach(e=>e.textContent=cur.code);
+  const sv=document.getElementById('s-currency-val'); if(sv)sv.textContent=cur.symbol+' · '+cur.code;
+  const bn=document.getElementById('cur-base-note'); if(bn)bn.textContent=getBaseCode();
+  const ack=document.getElementById('s-appcheck-val');
+  if(ack){const k=localStorage.getItem('cf_recaptcha_key'); ack.textContent=(k&&k!=='YOUR_RECAPTCHA_SITE_KEY')?'On ✓':'Off';}
+}
+// Live "≈ base" hint under amount inputs (amounts are typed in the display currency)
+function updateAmtHint(inputId,hintId){
+  const el=document.getElementById(hintId); if(!el)return;
+  const base=getBaseCode(), disp=getDisplayCode();
+  if(base===disp){el.textContent='';return;}
+  const v=parseFloat((document.getElementById(inputId)||{}).value);
+  if(!v||v<=0){el.textContent='';return;}
+  const bc=CURRENCIES[base]||CURRENCIES.MYR;
+  const b=toBase(v);
+  el.textContent='≈ '+bc.symbol+' '+b.toLocaleString(bc.locale,{minimumFractionDigits:2,maximumFractionDigits:2})+' · saved in '+base;
+}
+function openCurrencyModal(){ renderCurrencyModal(); loadRates(true); document.getElementById('currency-modal').classList.add('open'); }
+function renderCurrencyModal(){
+  const disp=getDisplayCode();
+  const opts=document.getElementById('currency-options');
+  if(opts){
+    opts.innerHTML=Object.values(CURRENCIES).map(c=>{
+      const rate=convert(1,'USD',c.code);
+      return `<div class="cur-row ${c.code===disp?'selected':''}" onclick="selectCurrency('${c.code}')">
+        <div class="cur-row-flag">${c.flag}</div>
+        <div class="cur-row-info">
+          <div class="cur-row-name">${c.symbol} · ${c.name}</div>
+          <div class="cur-row-rate">1 USD = ${rate.toLocaleString('en-US',{maximumFractionDigits:4})} ${c.code}</div>
+        </div>
+        ${c.code===disp?'<div class="cur-row-check">✓</div>':''}
+      </div>`;
+    }).join('');
+  }
+  const rl=document.getElementById('currency-rate-lines');
+  if(rl){
+    const dc=getDisplayCur();
+    const others=Object.values(CURRENCIES).filter(c=>c.code!==disp);
+    rl.innerHTML=others.map(c=>{
+      const v=convert(1,disp,c.code);
+      return `<div class="rate-line"><span>1 ${dc.symbol} ${disp}</span><span class="v">${v.toLocaleString('en-US',{maximumFractionDigits:4})} ${c.code}</span></div>`;
+    }).join('');
+  }
+  const t=document.getElementById('currency-rate-time');
+  if(t) t.textContent = S.ratesTime ? ('Rates updated: '+new Date(S.ratesTime).toLocaleString()) : 'Using offline fallback rates (connect to refresh)';
+}
+async function selectCurrency(code){
+  if(!CURRENCIES[code])return;
+  S.userSettings.displayCurrency=code;
+  refreshCurrencyUI(); renderCurrencyModal(); renderCurrentView();
+  try{ await settingsRef().set({...S.userSettings,displayCurrency:code},{merge:true}); showToast(CURRENCIES[code].flag+' '+code,'ok'); }
+  catch(e){ showToast('Saved on this device','ok'); }
+}
+async function refreshRatesNow(){ showToast('Updating rates…'); await loadRates(true); renderCurrencyModal(); refreshCurrencyUI(); renderCurrentView(); showToast('Rates updated ✓','ok'); }
+
+// ══════════════════════════════════════════
+//  SECURITY — APP CHECK & RULES UI
+// ══════════════════════════════════════════
+function openAppCheckModal(){
+  const k=localStorage.getItem('cf_recaptcha_key');
+  document.getElementById('appcheck-key').value=(k&&k!=='YOUR_RECAPTCHA_SITE_KEY')?k:'';
+  document.getElementById('appcheck-modal').classList.add('open');
+}
+function saveAppCheckKey(){
+  const k=document.getElementById('appcheck-key').value.trim();
+  if(!k){showToast('Enter a key','err');return;}
+  if(k.length<20){showToast('That key looks too short','err');return;}
+  localStorage.setItem('cf_recaptcha_key',k);
+  secLog('App Check key saved','ok');
+  refreshCurrencyUI(); closeModal('appcheck-modal');
+  showToast('Saved ✓ Reloading…','ok'); setTimeout(()=>location.reload(),900);
+}
+function clearAppCheckKey(){
+  localStorage.removeItem('cf_recaptcha_key');
+  secLog('App Check key removed','warn');
+  refreshCurrencyUI(); closeModal('appcheck-modal');
+  showToast('Key removed','ok'); setTimeout(()=>location.reload(),700);
+}
+const FIRESTORE_RULES = `rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // A user can read & write ONLY their own data.
+    match /users/{userId}/{document=**} {
+      allow read, write: if request.auth != null
+                         && request.auth.uid == userId;
+    }
+
+    // Deny everything else by default.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}`;
+function openRulesModal(){
+  document.getElementById('rules-code').textContent=FIRESTORE_RULES;
+  document.getElementById('rules-modal').classList.add('open');
+}
+function copyRules(){
+  navigator.clipboard.writeText(FIRESTORE_RULES)
+    .then(()=>showToast('Rules copied ✓','ok'))
+    .catch(()=>showToast('Select the text to copy','err'));
+}
 
 // Emoji/color grids
 function renderEmojiGrid(gridId,stateKey){
@@ -2488,6 +2798,7 @@ if('serviceWorker'in navigator){
 // ══════════════════════════════════════════
 function init(){
   loadAuditLog();
+  loadRates();   // fetch live FX rates (cached, with offline fallback)
   if(!isConfigured()){document.getElementById('setup-screen').classList.remove('hidden');return}
   if(!initFirebase()){document.getElementById('setup-screen').classList.remove('hidden');return}
   S.auth.onAuthStateChanged(user=>{
