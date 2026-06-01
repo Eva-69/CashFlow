@@ -531,6 +531,26 @@ input,select,textarea{font-family:inherit;outline:none;border:none;background:no
 .cur-chip:active{transform:scale(.95)}
 .cur-chip.active{border-color:var(--teal);background:var(--teal);color:#fff}
 .tx-conv{font-size:.72rem;color:var(--muted);font-weight:600;margin-top:1px}
+/* ── MONEY POTS ── */
+.src-grid{display:flex;flex-direction:column;gap:7px}
+.src-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);
+  border:2px solid var(--border);background:var(--card);cursor:pointer;transition:.15s}
+.src-item:active{transform:scale(.99)}
+.src-item.selected{border-color:var(--teal);background:rgba(0,201,167,.07)}
+.src-emoji{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0}
+.src-name{flex:1;font-weight:700;font-size:.9rem}
+.src-bal{font-family:'DM Mono',monospace;font-weight:700;font-size:.88rem}
+.src-bal.neg{color:var(--red)}
+.src-check{color:var(--teal);font-weight:900}
+.pots-list{display:flex;flex-direction:column;gap:8px}
+.pot-item{display:flex;align-items:center;gap:11px;padding:13px;border-radius:var(--radius-sm);
+  background:var(--card);border:1px solid var(--border)}
+.pot-emoji{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:1.05rem;flex-shrink:0}
+.pot-info{flex:1;min-width:0}
+.pot-name{font-weight:700;font-size:.92rem}
+.pot-sub{font-size:.7rem;color:var(--muted);margin-top:1px}
+.pot-bal{font-family:'DM Mono',monospace;font-weight:800;font-size:1rem}
+.pot-bal.neg{color:var(--red)}
 .cur-row{display:flex;align-items:center;gap:12px;padding:13px;border-radius:var(--radius-sm);
   border:2px solid var(--border);margin-bottom:8px;cursor:pointer;transition:.15s;background:var(--card)}
 .cur-row:active{transform:scale(.98)}
@@ -679,6 +699,8 @@ input,select,textarea{font-family:inherit;outline:none;border:none;background:no
         </div>
       </div>
     </div>
+    <div class="sec-head"><div class="sec-title">💰 Money Pots</div><div class="sec-link" onclick="openAddModal('income')">+ Income</div></div>
+    <div id="pots-list" class="pots-list"></div>
     <div class="sec-head"><div class="sec-title">Recent Transactions</div><div class="sec-link" onclick="showView('history')">See All</div></div>
     <div id="recent-list"><div class="spinner-wrap"><div class="spinner"></div></div></div>
   </div>
@@ -979,6 +1001,10 @@ input,select,textarea{font-family:inherit;outline:none;border:none;background:no
     <div class="form-field">
       <label class="form-label">Category</label>
       <div class="cat-grid" id="add-cat-grid"></div>
+    </div>
+    <div class="form-field" id="src-field" style="display:none">
+      <label class="form-label">Spend from which pot? <span style="font-weight:500;color:var(--muted)">(money source)</span></label>
+      <div class="src-grid" id="add-src-grid"></div>
     </div>
     <div class="form-field">
       <label class="form-label">Note (optional)</label>
@@ -1366,7 +1392,7 @@ const S = {
   transactions:[], customCats:[], investments:[], invSnapshots:[], goals:[],
   userSettings:{yearlyTarget:10, budgets:{}, baseCurrency:'MYR', displayCurrency:'MYR'},
   rates:null, ratesTime:null,
-  view:'dashboard', addType:'expense', selCatId:null, addCur:'MYR',
+  view:'dashboard', addType:'expense', selCatId:null, addCur:'MYR', srcCat:null,
   editingTxId:null, editingCatId:null, editingInvId:null, editingGoalId:null,
   viewingInvId:null, catType:'expense',
   selEmoji:'📦', selColor:'#FF5E6C',
@@ -1712,6 +1738,17 @@ function teardownListeners(){S.unsubs.forEach(u=>u());S.unsubs=[]}
 // ══════════════════════════════════════════
 const allCats=()=>[...DEFAULT_CATS,...S.customCats];
 const getCat=(id)=>allCats().find(c=>c.id===id)||{name:'Unknown',icon:'❓',color:'#ccc'};
+// Income categories double as "money pots". A pot's balance (in MYR) = money that
+// came in under that category, minus expenses you marked as spent FROM that pot.
+const incomePots=()=>allCats().filter(c=>c.type==='income');
+function getPotBalance(catId){
+  let bal=0;
+  S.transactions.forEach(t=>{
+    if(t.type==='income' && t.categoryId===catId) bal+=t.amount;
+    else if(t.type==='expense' && t.srcCat===catId) bal-=t.amount;
+  });
+  return bal;
+}
 
 // ══════════════════════════════════════════
 //  CURRENCY ENGINE
@@ -1978,10 +2015,38 @@ function renderDashboard(){
   const topExp=Object.entries(expByCat).sort((a,b)=>b[1]-a[1])[0];
   if(topExp){const c=getCat(topExp[0]);document.getElementById('biggest-expense-label').textContent=`Top: ${c.icon} ${c.name} ${fmtRMShort(topExp[1])}`}
   else{document.getElementById('biggest-expense-label').textContent='No expenses yet'}
+  // Money pots
+  renderPots();
   // Recent txs
   const list=document.getElementById('recent-list');
   const recent=S.transactions.slice(0,8);
   list.innerHTML=recent.length?renderGroupedTx(recent):`<div class="empty"><span class="empty-icon">💳</span><div class="empty-text">No transactions yet.<br>Tap <b>+</b> to add your first!</div></div>`;
+}
+function renderPots(){
+  const el=document.getElementById('pots-list'); if(!el)return;
+  const pots=incomePots()
+    .map(c=>({c,bal:getPotBalance(c.id)}))
+    .filter(p=>Math.abs(p.bal)>0.005);  // only show pots that have seen money
+  if(!pots.length){
+    el.innerHTML=`<div class="empty" style="padding:18px"><div class="empty-text" style="font-size:.82rem">No money pots yet. Add income to fill one, then spend from it.</div></div>`;
+    return;
+  }
+  pots.sort((a,b)=>b.bal-a.bal);
+  el.innerHTML=pots.map(({c,bal})=>{
+    const spent=getPotSpent(c.id);
+    const sub=spent>0?`spent ${fmtRM(spent)} from here`:'nothing spent yet';
+    return`<div class="pot-item">
+      <div class="pot-emoji" style="background:${c.color}22">${c.icon}</div>
+      <div class="pot-info">
+        <div class="pot-name">${c.name}</div>
+        <div class="pot-sub">${sub}</div>
+      </div>
+      <div class="pot-bal ${bal<0?'neg':''}">${fmtRM(bal)}</div>
+    </div>`;
+  }).join('');
+}
+function getPotSpent(catId){
+  return S.transactions.filter(t=>t.type==='expense'&&t.srcCat===catId).reduce((s,t)=>s+t.amount,0);
 }
 
 // ══════════════════════════════════════════
@@ -2122,11 +2187,13 @@ function renderTxItem(t){
   const cur=t.cur||'MYR';
   const orig=(t.origAmount!=null)?t.origAmount:t.amount;
   const conv=(cur!=='MYR')?`<div class="tx-conv">≈ ${fmtCode(t.amount,'MYR')}</div>`:'';
+  let note=t.note||'—';
+  if(t.type==='expense'&&t.srcCat){const p=getCat(t.srcCat);note=(t.note?t.note+' ':'')+`<span style="color:var(--teal2)">↳ from ${p.icon} ${p.name}</span>`;}
   return`<div class="tx-item" onclick="openAS('${t.id}')">
     <div class="tx-icon" style="background:${cat.color}22">${cat.icon}</div>
     <div class="tx-info">
       <div class="tx-name">${cat.name}</div>
-      <div class="tx-note">${t.note||'—'}</div>
+      <div class="tx-note">${note}</div>
     </div>
     <div class="tx-right">
       <div class="tx-amount ${t.type}">${sign} ${fmtCode(orig,cur)}</div>
@@ -2373,7 +2440,18 @@ async function saveTransaction(){
   if(isNaN(dt.getTime())){showToast('Invalid date/time','err');return}
   const txCur=S.addCur||'MYR';
   const amountMYR=Math.round(convert(amount,txCur,'MYR')*100)/100; // MYR-equivalent powers all totals
-  const data={type:S.addType,amount:amountMYR,origAmount:amount,cur:txCur,categoryId:S.selCatId,note,
+  // Money-pot source (expenses only) + overspend warning
+  let srcCat=null;
+  if(S.addType==='expense' && S.srcCat){
+    srcCat=S.srcCat;
+    let avail=getPotBalance(srcCat);
+    if(S.editingTxId){ const old=S.transactions.find(t=>t.id===S.editingTxId); if(old&&old.type==='expense'&&old.srcCat===srcCat) avail+=old.amount; }
+    if(amountMYR>avail+0.005){
+      const pot=getCat(srcCat);
+      if(!confirm(`${pot.icon} ${pot.name} only has ${fmtRM(avail)} left. Spending ${fmtRM(amountMYR)} will push it negative.\n\nSave anyway?`)) return;
+    }
+  }
+  const data={type:S.addType,amount:amountMYR,origAmount:amount,cur:txCur,categoryId:S.selCatId,srcCat,note,
     date:firebase.firestore.Timestamp.fromDate(dt),
     createdAt:firebase.firestore.FieldValue.serverTimestamp()};
   try{
@@ -2509,14 +2587,14 @@ function exportCSV(){
 //  MODAL OPENERS / CLOSERS
 // ══════════════════════════════════════════
 function openAddModal(type='expense',txId=null){
-  S.addType=type||'expense';S.editingTxId=txId;S.selCatId=null;
+  S.addType=type||'expense';S.editingTxId=txId;S.selCatId=null;S.srcCat=null;
   document.getElementById('add-modal-title').textContent=txId?'Edit Transaction':'Add Transaction';
   document.getElementById('tx-delete-wrap').style.display=txId?'block':'none';
   if(txId){
     const t=S.transactions.find(t=>t.id===txId);
     if(t){
       S.addType=t.type;S.selCatId=t.categoryId;
-      S.addCur=t.cur||'MYR';
+      S.addCur=t.cur||'MYR';S.srcCat=t.srcCat||null;
       document.getElementById('add-amount').value=(t.origAmount!=null)?t.origAmount:t.amount;
       document.getElementById('add-note').value=t.note||'';
       const d=tsToDate(t.date);
@@ -2543,6 +2621,9 @@ function setAddType(type,resetCat=true){
   document.getElementById('btn-exp').className='type-btn expense'+(type==='expense'?' active':'');
   document.getElementById('btn-inc').className='type-btn income'+(type==='income'?' active':'');
   renderCatGrid();
+  // "Spend from" pot selector only applies to expenses
+  const sf=document.getElementById('src-field');
+  if(sf){ sf.style.display=type==='expense'?'block':'none'; if(type==='expense')renderSrcGrid(); else S.srcCat=null; }
 }
 function renderCatGrid(){
   const cats=allCats().filter(c=>c.type===S.addType);
@@ -2553,6 +2634,22 @@ function renderCatGrid(){
     </div>`).join('');
 }
 function selCat(id){S.selCatId=id;renderCatGrid()}
+// Render the income-category "pots" you can spend from, each with its live balance.
+function renderSrcGrid(){
+  const grid=document.getElementById('add-src-grid'); if(!grid)return;
+  const pots=incomePots();
+  if(!pots.length){grid.innerHTML='<div style="font-size:.8rem;color:var(--muted)">No income categories yet.</div>';return;}
+  grid.innerHTML=pots.map(c=>{
+    const bal=getPotBalance(c.id);const sel=S.srcCat===c.id;
+    return`<div class="src-item ${sel?'selected':''}" onclick="selSrc('${c.id}')">
+      <div class="src-emoji" style="background:${c.color}22">${c.icon}</div>
+      <div class="src-name">${c.name}</div>
+      <div class="src-bal ${bal<0?'neg':''}">${fmtRM(bal)}</div>
+      ${sel?'<div class="src-check">✓</div>':''}
+    </div>`;
+  }).join('');
+}
+function selSrc(id){ S.srcCat = (S.srcCat===id?null:id); renderSrcGrid(); }
 
 function openCategoryModal(catId=null){
   S.editingCatId=catId;S.selEmoji='📦';S.selColor='#FF5E6C';S.catType='expense';
