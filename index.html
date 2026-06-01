@@ -102,8 +102,13 @@ input,select,textarea{font-family:inherit;outline:none;border:none;background:no
 /* ── BALANCE CARD ── */
 .balance-card{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.14);
   border-radius:var(--radius);padding:18px;backdrop-filter:blur(10px);margin-bottom:0}
+.bal-label-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
 .bal-label{font-size:.72rem;color:rgba(255,255,255,.5);font-weight:600;
-  letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
+  letter-spacing:.06em;text-transform:uppercase}
+.bal-cur-pill{font-family:inherit;font-size:.72rem;font-weight:700;color:#fff;
+  background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);
+  border-radius:999px;padding:3px 10px;cursor:pointer;transition:.15s}
+.bal-cur-pill:active{transform:scale(.95)}
 .bal-total{font-size:2.2rem;font-weight:900;letter-spacing:-.03em;line-height:1;
   font-family:'DM Mono',monospace}
 .bal-sub{font-size:.72rem;color:rgba(255,255,255,.4);margin-top:3px}
@@ -520,6 +525,12 @@ input,select,textarea{font-family:inherit;outline:none;border:none;background:no
 
 /* ── CURRENCY ── */
 .cur-hint{font-size:.74rem;color:var(--teal2);font-weight:600;text-align:center;margin-top:4px;min-height:14px}
+.cur-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-top:8px}
+.cur-chip{font-family:inherit;font-size:.8rem;font-weight:700;padding:6px 12px;border-radius:999px;
+  border:2px solid var(--border);background:var(--card);color:var(--muted);cursor:pointer;transition:.15s}
+.cur-chip:active{transform:scale(.95)}
+.cur-chip.active{border-color:var(--teal);background:var(--teal);color:#fff}
+.tx-conv{font-size:.72rem;color:var(--muted);font-weight:600;margin-top:1px}
 .cur-row{display:flex;align-items:center;gap:12px;padding:13px;border-radius:var(--radius-sm);
   border:2px solid var(--border);margin-bottom:8px;cursor:pointer;transition:.15s;background:var(--card)}
 .cur-row:active{transform:scale(.98)}
@@ -604,7 +615,10 @@ input,select,textarea{font-family:inherit;outline:none;border:none;background:no
       </div>
     </div>
     <div class="balance-card">
-      <div class="bal-label">NET WORTH</div>
+      <div class="bal-label-row">
+        <div class="bal-label">NET WORTH</div>
+        <button type="button" class="bal-cur-pill" id="bal-cur-pill" onclick="openCurrencyModal()">🇲🇾 MYR ▾</button>
+      </div>
       <div class="bal-total" id="bal-total">RM 0.00</div>
       <div class="bal-sub" id="bal-sub">Cash balance + Investments</div>
       <div class="bal-grid">
@@ -957,9 +971,10 @@ input,select,textarea{font-family:inherit;outline:none;border:none;background:no
       <button class="type-btn income" id="btn-inc" onclick="setAddType('income')">💰 Income</button>
     </div>
     <div class="amount-wrap">
-      <span class="amount-rm cur-sym">RM</span>
-      <input type="number" class="amount-input" id="add-amount" placeholder="0.00" min="0" step="0.01" inputmode="decimal" oninput="updateAmtHint('add-amount','add-amount-hint')">
+      <span class="amount-rm" id="add-cur-sym">RM</span>
+      <input type="number" class="amount-input" id="add-amount" placeholder="0.00" min="0" step="0.01" inputmode="decimal" oninput="updateAddHint()">
     </div>
+    <div class="cur-chips" id="add-cur-chips"></div>
     <div class="cur-hint" id="add-amount-hint"></div>
     <div class="form-field">
       <label class="form-label">Category</label>
@@ -1204,8 +1219,8 @@ input,select,textarea{font-family:inherit;outline:none;border:none;background:no
 <div class="modal-overlay" id="currency-modal">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
-    <div class="modal-title">💱 Currency</div>
-    <div class="modal-subtitle">Pick the currency you record &amp; view your money in</div>
+    <div class="modal-title">💱 Balance Currency</div>
+    <div class="modal-subtitle">Pick the currency to view your total balance &amp; summaries in</div>
     <div id="currency-options"></div>
     <div class="card" style="box-shadow:none;border:1px solid var(--border);margin-top:6px">
       <div class="sec-head">
@@ -1216,9 +1231,9 @@ input,select,textarea{font-family:inherit;outline:none;border:none;background:no
       <div style="font-size:.7rem;color:var(--muted);margin-top:8px" id="currency-rate-time">—</div>
     </div>
     <div style="font-size:.74rem;color:var(--muted);line-height:1.6;margin-top:6px">
-      Your saved amounts stay anchored in <b id="cur-base-note">MYR</b>. Switching display currency
-      converts everything live — and what you type in is converted back automatically, so your
-      history and totals always stay correct.
+      Each transaction is saved in the currency you picked when adding it (anchored in <b id="cur-base-note">MYR</b> for
+      the maths). This setting only changes the currency your total balance &amp; summaries are shown in —
+      every record still displays its own original amount, with the RM value beside it.
     </div>
     <button class="btn btn-navy mt12" onclick="closeModal('currency-modal')">Done</button>
     <div style="height:6px"></div>
@@ -1351,7 +1366,7 @@ const S = {
   transactions:[], customCats:[], investments:[], invSnapshots:[], goals:[],
   userSettings:{yearlyTarget:10, budgets:{}, baseCurrency:'MYR', displayCurrency:'MYR'},
   rates:null, ratesTime:null,
-  view:'dashboard', addType:'expense', selCatId:null,
+  view:'dashboard', addType:'expense', selCatId:null, addCur:'MYR',
   editingTxId:null, editingCatId:null, editingInvId:null, editingGoalId:null,
   viewingInvId:null, catType:'expense',
   selEmoji:'📦', selColor:'#FF5E6C',
@@ -1782,6 +1797,12 @@ const fmtRMShort=(n)=>{
   if(v>=1000)return cur.symbol+(v/1000).toFixed(1)+'k';
   return cur.symbol+' '+v.toLocaleString(cur.locale,{minimumFractionDigits:2,maximumFractionDigits:2});
 };
+// Format an amount that is ALREADY expressed in `code` currency (no conversion).
+const fmtCode=(n,code,abs=true)=>{
+  const c=CURRENCIES[code]||CURRENCIES.MYR;
+  const v=abs?Math.abs(n):n;
+  return c.symbol+' '+v.toLocaleString(c.locale,{minimumFractionDigits:2,maximumFractionDigits:2});
+};
 const fmtPct=(p,digits=1)=>(p>0?'+':'')+p.toFixed(digits)+'%';
 const fmtDate=(ts)=>{const d=tsToDate(ts);return d.toLocaleDateString('en-MY',{day:'2-digit',month:'short',year:'numeric'})};
 const fmtTime=(ts)=>{const d=tsToDate(ts);return d.toLocaleTimeString('en-MY',{hour:'2-digit',minute:'2-digit'})};
@@ -2098,6 +2119,9 @@ function renderGroupedTx(txs){
 function renderTxItem(t){
   const cat=getCat(t.categoryId);
   const sign=t.type==='income'?'+':'−';
+  const cur=t.cur||'MYR';
+  const orig=(t.origAmount!=null)?t.origAmount:t.amount;
+  const conv=(cur!=='MYR')?`<div class="tx-conv">≈ ${fmtCode(t.amount,'MYR')}</div>`:'';
   return`<div class="tx-item" onclick="openAS('${t.id}')">
     <div class="tx-icon" style="background:${cat.color}22">${cat.icon}</div>
     <div class="tx-info">
@@ -2105,7 +2129,8 @@ function renderTxItem(t){
       <div class="tx-note">${t.note||'—'}</div>
     </div>
     <div class="tx-right">
-      <div class="tx-amount ${t.type}">${sign} ${fmtRM(t.amount)}</div>
+      <div class="tx-amount ${t.type}">${sign} ${fmtCode(orig,cur)}</div>
+      ${conv}
       <div class="tx-time">${fmtTime(t.date)}</div>
     </div>
   </div>`;
@@ -2346,8 +2371,9 @@ async function saveTransaction(){
   if(!dateVal){showToast('Select a date','err');return}
   const dt=new Date(dateVal+'T'+timeVal);
   if(isNaN(dt.getTime())){showToast('Invalid date/time','err');return}
-  const amountBase=Math.round(toBase(amount)*100)/100;   // store in base currency
-  const data={type:S.addType,amount:amountBase,categoryId:S.selCatId,note,
+  const txCur=S.addCur||'MYR';
+  const amountMYR=Math.round(convert(amount,txCur,'MYR')*100)/100; // MYR-equivalent powers all totals
+  const data={type:S.addType,amount:amountMYR,origAmount:amount,cur:txCur,categoryId:S.selCatId,note,
     date:firebase.firestore.Timestamp.fromDate(dt),
     createdAt:firebase.firestore.FieldValue.serverTimestamp()};
   try{
@@ -2467,10 +2493,11 @@ async function saveYearlyTarget(){
 //  EXPORT
 // ══════════════════════════════════════════
 function exportCSV(){
-  const rows=[['Date','Time','Type','Category','Note','Amount ('+getBaseCode()+')']];
+  const rows=[['Date','Time','Type','Category','Note','Currency','Original Amount','Amount (MYR)']];
   S.transactions.forEach(t=>{
     const d=tsToDate(t.date);const c=getCat(t.categoryId);
-    rows.push([d.toLocaleDateString('en-MY'),d.toLocaleTimeString('en-MY'),t.type,c.name,t.note||'',t.amount.toFixed(2)]);
+    const cur=t.cur||'MYR';const orig=(t.origAmount!=null)?t.origAmount:t.amount;
+    rows.push([d.toLocaleDateString('en-MY'),d.toLocaleTimeString('en-MY'),t.type,c.name,t.note||'',cur,Number(orig).toFixed(2),t.amount.toFixed(2)]);
   });
   const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
@@ -2489,13 +2516,15 @@ function openAddModal(type='expense',txId=null){
     const t=S.transactions.find(t=>t.id===txId);
     if(t){
       S.addType=t.type;S.selCatId=t.categoryId;
-      document.getElementById('add-amount').value=fromBase(t.amount);
+      S.addCur=t.cur||'MYR';
+      document.getElementById('add-amount').value=(t.origAmount!=null)?t.origAmount:t.amount;
       document.getElementById('add-note').value=t.note||'';
       const d=tsToDate(t.date);
       document.getElementById('add-date').value=d.toISOString().split('T')[0];
       document.getElementById('add-time').value=d.toTimeString().slice(0,5);
     }
   } else {
+    S.addCur='MYR';
     document.getElementById('add-amount').value='';
     document.getElementById('add-note').value='';
     const now=new Date();
@@ -2503,7 +2532,7 @@ function openAddModal(type='expense',txId=null){
     document.getElementById('add-time').value=now.toTimeString().slice(0,5);
   }
   setAddType(S.addType,false);
-  refreshCurrencyUI();updateAmtHint('add-amount','add-amount-hint');
+  renderAddCurChips();setAddCur(S.addCur||'MYR');
   document.getElementById('add-modal').classList.add('open');
   setTimeout(()=>document.getElementById('add-amount').focus(),250);
 }
@@ -2608,6 +2637,7 @@ function refreshCurrencyUI(){
   document.querySelectorAll('.cur-sym').forEach(e=>e.textContent=cur.symbol);
   document.querySelectorAll('.cur-code').forEach(e=>e.textContent=cur.code);
   const sv=document.getElementById('s-currency-val'); if(sv)sv.textContent=cur.symbol+' · '+cur.code;
+  const pill=document.getElementById('bal-cur-pill'); if(pill)pill.textContent=cur.flag+' '+cur.code+' ▾';
   const bn=document.getElementById('cur-base-note'); if(bn)bn.textContent=getBaseCode();
   const ack=document.getElementById('s-appcheck-val');
   if(ack){const k=localStorage.getItem('cf_recaptcha_key'); ack.textContent=(k&&k!=='YOUR_RECAPTCHA_SITE_KEY')?'On ✓':'Off';}
@@ -2622,6 +2652,30 @@ function updateAmtHint(inputId,hintId){
   const bc=CURRENCIES[base]||CURRENCIES.MYR;
   const b=toBase(v);
   el.textContent='≈ '+bc.symbol+' '+b.toLocaleString(bc.locale,{minimumFractionDigits:2,maximumFractionDigits:2})+' · saved in '+base;
+}
+// ── Per-transaction currency selector (income / expense) ──
+function renderAddCurChips(){
+  const box=document.getElementById('add-cur-chips'); if(!box)return;
+  const sel=S.addCur||'MYR';
+  box.innerHTML=Object.values(CURRENCIES).map(c=>
+    `<button type="button" class="cur-chip${sel===c.code?' active':''}" onclick="setAddCur('${c.code}')">${c.flag} ${c.code}</button>`
+  ).join('');
+}
+function setAddCur(code){
+  if(!CURRENCIES[code])code='MYR';
+  S.addCur=code;
+  const sym=document.getElementById('add-cur-sym'); if(sym)sym.textContent=CURRENCIES[code].symbol;
+  renderAddCurChips();
+  updateAddHint();
+}
+// Live "≈ RM" hint under the transaction amount (always converts the entered currency to MYR)
+function updateAddHint(){
+  const el=document.getElementById('add-amount-hint'); if(!el)return;
+  const code=S.addCur||'MYR';
+  if(code==='MYR'){el.textContent='';return;}
+  const v=parseFloat((document.getElementById('add-amount')||{}).value);
+  if(!v||v<=0){el.textContent='';return;}
+  el.textContent='≈ '+fmtCode(convert(v,code,'MYR'),'MYR')+' · saved as RM';
 }
 function openCurrencyModal(){ renderCurrencyModal(); loadRates(true); document.getElementById('currency-modal').classList.add('open'); }
 function renderCurrencyModal(){
