@@ -620,6 +620,34 @@ input,select,textarea{font-family:inherit;outline:none;border:none;background:no
 .price-refresh-btn{background:rgba(245,200,66,.15);border:1px solid rgba(245,200,66,.3);
   color:var(--gold);padding:5px 12px;border-radius:20px;font-size:.72rem;font-weight:700;cursor:pointer;transition:.15s}
 .price-refresh-btn:active{transform:scale(.95)}
+.gold-purity-toggle{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;
+  background:var(--bg);border-radius:var(--radius-sm);padding:4px;margin-bottom:14px;
+  border:1px solid var(--border)}
+.gpurity-btn{padding:9px 6px;border-radius:10px;font-size:.82rem;font-weight:800;
+  color:var(--muted);background:transparent;transition:.18s;text-align:center;cursor:pointer;border:none}
+.gpurity-btn.active{background:var(--card);color:var(--navy);box-shadow:0 2px 10px rgba(15,31,61,.08)}
+.gpurity-btn.active.p999{color:#B8860B}
+.gpurity-btn.active.p916{color:#C0950A}
+.gpurity-btn.active.p750{color:#CD7F32}
+.purity-badge{display:inline-flex;align-items:center;font-size:.64rem;font-weight:800;
+  padding:2px 7px;border-radius:20px;letter-spacing:.03em;flex-shrink:0}
+.purity-badge.p999{background:#FEF3C7;color:#92400E}
+.purity-badge.p916{background:#FDE68A;color:#78350F}
+.purity-badge.p750{background:#FBBF24;color:#451A03}
+.gold-purity-section{background:rgba(255,255,255,.05);border-radius:10px;padding:10px 12px;margin-top:8px;border:1px solid rgba(245,200,66,.12)}
+.gold-purity-section-label{font-size:.66rem;color:rgba(255,255,255,.4);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.gold-purity-section-row{display:flex;justify-content:space-between;align-items:center;font-size:.8rem}
+.gold-purity-price{font-family:'DM Mono',monospace;font-weight:700;color:var(--gold);font-size:.84rem}
+.gold-purity-pnl{font-family:'DM Mono',monospace;font-weight:700;font-size:.78rem}
+.gold-purity-pnl.pos{color:var(--teal)}
+.gold-purity-pnl.neg{color:#FF8A95}
+/* Price modal purity tabs */
+.price-purity-tabs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;
+  background:var(--bg);border-radius:var(--radius-sm);padding:4px;margin-bottom:16px;
+  border:1px solid var(--border)}
+.pp-tab{padding:10px;border-radius:10px;font-size:.84rem;font-weight:800;
+  color:var(--muted);background:transparent;text-align:center;transition:.18s;cursor:pointer;border:none}
+.pp-tab.active{background:var(--card);color:var(--navy);box-shadow:0 2px 10px rgba(15,31,61,.08)}
 </style>
 </head>
 <body>
@@ -831,15 +859,10 @@ input,select,textarea{font-family:inherit;outline:none;border:none;background:no
             <div class="gold-stat-val" id="gold-pnl">RM 0</div>
           </div>
         </div>
-        <div class="gold-price-row">
-          <div>
-            <div class="gold-price-label">Current Gold Price (per gram)</div>
-            <div class="gold-price-val" id="gold-cur-price-display">—</div>
-          </div>
-          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
-            <div class="gold-price-badge" id="gold-price-source">Manual</div>
-            <button class="price-refresh-btn" onclick="openGoldPriceModal()">Set Price</button>
-          </div>
+        <!-- Per-purity price rows, rendered by JS -->
+        <div id="gold-purity-price-rows"></div>
+        <div style="text-align:right;margin-top:8px">
+          <button class="price-refresh-btn" onclick="openGoldPriceModal()">✏️ Set Prices</button>
         </div>
       </div>
       <!-- Empty state -->
@@ -1421,9 +1444,17 @@ input,select,textarea{font-family:inherit;outline:none;border:none;background:no
     <div class="modal-handle"></div>
     <div class="modal-title" id="gold-purchase-modal-title">Add Gold Purchase</div>
     <div class="modal-subtitle">Enter each batch of gold you bought — we'll calculate your average cost</div>
+    <div class="form-field">
+      <label class="form-label">Gold Purity</label>
+      <div class="gold-purity-toggle" id="gold-purity-toggle">
+        <button class="gpurity-btn p999" data-purity="999" onclick="selectGoldPurity('999')">🥇 999 (24K)</button>
+        <button class="gpurity-btn p916" data-purity="916" onclick="selectGoldPurity('916')">⭐ 916 (22K)</button>
+        <button class="gpurity-btn p750" data-purity="750" onclick="selectGoldPurity('750')">✨ 750 (18K)</button>
+      </div>
+    </div>
     <div class="form-row">
       <div class="form-field">
-        <label class="form-label">Gold Price (RM/gram)</label>
+        <label class="form-label">Purchase Price (RM/gram)</label>
         <input type="number" class="form-input" id="gold-price-per-gram" placeholder="e.g. 410.00" min="0" step="0.01" inputmode="decimal" oninput="updateGoldPurchasePreview()">
       </div>
       <div class="form-field">
@@ -1479,24 +1510,32 @@ input,select,textarea{font-family:inherit;outline:none;border:none;background:no
 <div class="modal-overlay" id="gold-price-modal">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
-    <div class="modal-title">🥇 Set Current Gold Price</div>
-    <div class="modal-subtitle">Enter the current Malaysia gold price per gram (RM)</div>
-    <div style="background:#FEF3C7;border-radius:var(--radius-sm);padding:13px;font-size:.8rem;color:#92400E;line-height:1.6;border:1.5px solid #FDE68A;margin-bottom:14px">
-      💡 Check today's gold price at <b>Public Gold</b>, <b>Maybank Gold</b>, or search "Malaysia gold price per gram" for the latest rate.
+    <div class="modal-title">🥇 Set Gold Price</div>
+    <div class="modal-subtitle">Set the current Malaysia market price per gram for each purity</div>
+    <div style="background:#FEF3C7;border-radius:var(--radius-sm);padding:12px;font-size:.78rem;color:#92400E;line-height:1.6;border:1.5px solid #FDE68A;margin-bottom:14px">
+      💡 Check <b>Public Gold</b>, <b>Maybank Gold</b>, or <b>LBMA/BNM</b> for today's rates. 999 is always higher than 916 which is higher than 750.
     </div>
+    <!-- Purity tabs -->
+    <div class="price-purity-tabs" id="price-purity-tabs">
+      <button class="pp-tab active" data-pp="999" onclick="selectPricePurity('999')">🥇 999 (24K)</button>
+      <button class="pp-tab" data-pp="916" onclick="selectPricePurity('916')">⭐ 916 (22K)</button>
+      <button class="pp-tab" data-pp="750" onclick="selectPricePurity('750')">✨ 750 (18K)</button>
+    </div>
+    <div id="price-purity-label" style="text-align:center;font-size:.75rem;color:var(--muted);margin-bottom:6px">Setting price for 999 (24K) gold per gram</div>
     <div class="amount-wrap">
       <span class="amount-rm">RM</span>
       <input type="number" class="amount-input" id="gold-manual-price" placeholder="0.00" min="0" step="0.01" inputmode="decimal">
     </div>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0">
-      <button onclick="setGoldPriceQuick(370)" style="padding:9px;background:#f5f7fb;border-radius:10px;font-weight:700;font-size:.8rem">RM370</button>
-      <button onclick="setGoldPriceQuick(390)" style="padding:9px;background:#f5f7fb;border-radius:10px;font-weight:700;font-size:.8rem">RM390</button>
-      <button onclick="setGoldPriceQuick(410)" style="padding:9px;background:#f5f7fb;border-radius:10px;font-weight:700;font-size:.8rem">RM410</button>
-      <button onclick="setGoldPriceQuick(430)" style="padding:9px;background:#f5f7fb;border-radius:10px;font-weight:700;font-size:.8rem">RM430</button>
-    </div>
-    <button class="btn btn-navy" onclick="saveGoldPrice()">Save Gold Price</button>
-    <button class="btn btn-ghost mt12" onclick="fetchGoldPriceAuto()">🔄 Auto-Fetch (XAU)</button>
+    <!-- Quick presets per purity -->
+    <div id="gold-price-presets" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0"></div>
+    <button class="btn btn-navy" onclick="saveGoldPrice()">Save Price</button>
+    <button class="btn btn-ghost mt12" onclick="fetchGoldPriceAuto()">🔄 Auto-Fetch 999 via XAU</button>
     <div id="gold-price-fetch-hint" style="font-size:.75rem;color:var(--muted);text-align:center;margin-top:8px;min-height:14px"></div>
+    <!-- Summary of all set prices -->
+    <div id="gold-price-summary" style="margin-top:14px;background:#f5f7fb;border-radius:var(--radius-sm);padding:12px;display:none">
+      <div style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Saved Prices</div>
+      <div id="gold-price-summary-rows"></div>
+    </div>
     <div style="height:6px"></div>
   </div>
 </div>
@@ -1578,7 +1617,10 @@ const INV_TYPE_LABELS = {
 const S = {
   user:null, db:null, auth:null,
   transactions:[], customCats:[], investments:[], invSnapshots:[], goals:[], goldPurchases:[],
-  userSettings:{yearlyTarget:10, budgets:{}, baseCurrency:'MYR', displayCurrency:'MYR', goldCurrentPrice:null, goldPriceUpdated:null},
+  userSettings:{yearlyTarget:10, budgets:{}, baseCurrency:'MYR', displayCurrency:'MYR',
+    goldPrice999:null, goldPrice916:null, goldPrice750:null,
+    goldPriceUpdated999:null, goldPriceUpdated916:null, goldPriceUpdated750:null},
+  selGoldPurity:'916', selPricePurity:'999',
   rates:null, ratesTime:null,
   view:'dashboard', addType:'expense', selCatId:null, addCur:'MYR', srcCat:null,
   editingTxId:null, editingCatId:null, editingInvId:null, editingGoalId:null, editingGoldId:null,
@@ -1919,7 +1961,9 @@ function setupListeners(){
     updateHeader();renderCurrentView();
   }));
   push(settingsRef().onSnapshot(d=>{
-    if(d.exists) S.userSettings={yearlyTarget:10,budgets:{},baseCurrency:'MYR',displayCurrency:'MYR',goldCurrentPrice:null,goldPriceUpdated:null,...d.data()};
+    if(d.exists) S.userSettings={yearlyTarget:10,budgets:{},baseCurrency:'MYR',displayCurrency:'MYR',
+      goldPrice999:null,goldPrice916:null,goldPrice750:null,
+      goldPriceUpdated999:null,goldPriceUpdated916:null,goldPriceUpdated750:null,...d.data()};
     refreshCurrencyUI();
     renderCurrentView();
   }));
@@ -3150,29 +3194,56 @@ if('serviceWorker'in navigator){
 //  GOLD TRACKER — HELPERS
 // ══════════════════════════════════════════
 const GOLD_TROY_OZ_TO_GRAM = 31.1035;
+const GOLD_PURITIES = ['999','916','750'];
+const GOLD_PURITY_LABELS = {'999':'999 (24K)','916':'916 (22K)','750':'750 (18K)'};
+// Typical quick-preset prices (RM/gram) per purity in Malaysia
+const GOLD_PRICE_PRESETS = {'999':[400,420,440,460],'916':[370,385,400,415],'750':[300,315,330,345]};
 
-function getGoldCurrentPrice(){
-  return S.userSettings.goldCurrentPrice || null;
+function getGoldPriceForPurity(purity){
+  return S.userSettings['goldPrice'+purity] || null;
 }
 
+// Returns per-purity breakdown + combined totals
 function getGoldTotals(){
   const purchases = S.goldPurchases;
-  if(!purchases.length) return {totalGrams:0,totalCost:0,avgCostPerGram:0,currentValue:0,pnl:0,pnlPct:0,currentPrice:0};
-  let totalGrams=0, totalCost=0;
-  purchases.forEach(p=>{
-    totalGrams += (p.grams||0);
-    totalCost += (p.pricePerGram||0)*(p.grams||0) + (p.makingFee||0);
+  const byPurity = {};
+  GOLD_PURITIES.forEach(p=>{ byPurity[p]={grams:0,cost:0,purchases:[]}; });
+
+  purchases.forEach(pur=>{
+    const pt = pur.purity || '916'; // default legacy records to 916
+    if(!byPurity[pt]) byPurity[pt]={grams:0,cost:0,purchases:[]};
+    byPurity[pt].grams += (pur.grams||0);
+    byPurity[pt].cost  += (pur.pricePerGram||0)*(pur.grams||0) + (pur.makingFee||0);
+    byPurity[pt].purchases.push(pur);
   });
+
+  // Compute per-purity stats
+  const purStats = {};
+  let totalGrams=0, totalCost=0, totalValue=0;
+  GOLD_PURITIES.forEach(pt=>{
+    const g = byPurity[pt].grams;
+    const c = byPurity[pt].cost;
+    const currentPrice = getGoldPriceForPurity(pt) || 0;
+    const value = g * currentPrice;
+    const pnl = value - c;
+    const pnlPct = c>0 ? (pnl/c)*100 : 0;
+    const avgCost = g>0 ? c/g : 0;
+    purStats[pt] = {grams:g, cost:c, currentPrice, value, pnl, pnlPct, avgCost, purchases:byPurity[pt].purchases};
+    totalGrams += g;
+    totalCost  += c;
+    totalValue += value;
+  });
+
+  const totalPnl = totalValue - totalCost;
+  const totalPnlPct = totalCost>0 ? (totalPnl/totalCost)*100 : 0;
   const avgCostPerGram = totalGrams>0 ? totalCost/totalGrams : 0;
-  const currentPrice = getGoldCurrentPrice() || 0;
-  const currentValue = totalGrams * currentPrice;
-  const pnl = currentValue - totalCost;
-  const pnlPct = totalCost>0 ? (pnl/totalCost)*100 : 0;
-  return {totalGrams, totalCost, avgCostPerGram, currentValue, pnl, pnlPct, currentPrice};
+  const priceIsSet = GOLD_PURITIES.some(p=>getGoldPriceForPurity(p)>0);
+
+  return {totalGrams, totalCost, totalValue, totalPnl, totalPnlPct, avgCostPerGram, priceIsSet, byPurity:purStats};
 }
 
 function getGoldValue(){
-  return getGoldTotals().currentValue;
+  return getGoldTotals().totalValue;
 }
 
 // ══════════════════════════════════════════
@@ -3180,87 +3251,137 @@ function getGoldValue(){
 // ══════════════════════════════════════════
 function renderGoldTracker(){
   const t = getGoldTotals();
-  const hasData = S.goldPurchases.length > 0;
-  const hasPurchases = hasData;
+  const hasPurchases = S.goldPurchases.length > 0;
 
-  // Show/hide main states
   document.getElementById('gold-summary-card').style.display = hasPurchases ? 'block' : 'none';
   document.getElementById('gold-empty-state').style.display = hasPurchases ? 'none' : 'block';
-  document.getElementById('gold-earn-section').style.display = (hasPurchases && t.currentPrice>0) ? 'block' : 'none';
+  document.getElementById('gold-earn-section').style.display = (hasPurchases && t.priceIsSet) ? 'block' : 'none';
 
   if(!hasPurchases) return;
 
-  // Summary card
-  document.getElementById('gold-total-value').textContent = fmtRM(t.currentValue);
+  // ── Summary card top stats ──
+  document.getElementById('gold-total-value').textContent = t.priceIsSet ? fmtRM(t.totalValue) : 'Set prices to see value';
   document.getElementById('gold-total-grams').textContent = t.totalGrams.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:3})+'g';
   document.getElementById('gold-avg-cost').textContent = 'RM '+t.avgCostPerGram.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2})+'/g';
   document.getElementById('gold-total-cost').textContent = fmtRM(t.totalCost);
   const pnlEl = document.getElementById('gold-pnl');
-  pnlEl.textContent = (t.pnl>=0?'+':'')+fmtRM(Math.abs(t.pnl),false).replace(/^RM\s*/,'RM ')+(t.currentPrice>0?' ('+fmtPct(t.pnlPct)+')':'');
-  pnlEl.className = 'gold-stat-val '+(t.pnl>=0?'pos':'neg');
-  if(t.currentPrice===0){ pnlEl.textContent='Set price to see P&L'; pnlEl.className='gold-stat-val'; }
+  if(t.priceIsSet){
+    pnlEl.textContent = (t.totalPnl>=0?'+':'')+fmtRM(Math.abs(t.totalPnl),false)+' ('+fmtPct(t.totalPnlPct)+')';
+    pnlEl.className = 'gold-stat-val '+(t.totalPnl>=0?'pos':'neg');
+  } else {
+    pnlEl.textContent = 'Set prices →';
+    pnlEl.className = 'gold-stat-val';
+  }
 
-  // Price row
-  const pr = t.currentPrice;
-  document.getElementById('gold-cur-price-display').textContent = pr>0 ? 'RM '+pr.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2})+'/g' : 'Not set — tap Set Price';
-  const priceUpdated = S.userSettings.goldPriceUpdated;
-  const src = document.getElementById('gold-price-source');
-  if(priceUpdated){
-    const d = priceUpdated.toDate ? priceUpdated.toDate() : new Date(priceUpdated);
-    src.textContent = 'Updated '+d.toLocaleDateString('en-MY',{day:'2-digit',month:'short'});
-  } else { src.textContent='Not set'; }
-
-  // Purchases list
-  const listEl = document.getElementById('gold-purchases-list');
-  listEl.innerHTML = S.goldPurchases.map(p=>{
-    const effCost = p.grams>0 ? ((p.pricePerGram*p.grams + (p.makingFee||0)) / p.grams) : p.pricePerGram;
-    const curVal = (p.grams||0) * (t.currentPrice||0);
-    const paid = (p.pricePerGram||0)*(p.grams||0) + (p.makingFee||0);
-    const pnl = curVal - paid;
-    const pnlStr = t.currentPrice>0 ? ((pnl>=0?'+':'')+fmtRM(Math.abs(pnl),false).replace('RM ','RM')) : '—';
-    const pnlClass = pnl>=0?'pos':'neg';
-    const dateStr = p.date ? fmtDate(p.date) : '—';
-    return`<div class="gold-purchase-item" onclick="openGoldPurchaseModal('${p.id}')">
-      <div class="gold-purchase-icon">🥇</div>
-      <div class="gold-purchase-info">
-        <div class="gold-purchase-name">${(p.grams||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:3})}<span style="font-size:.75rem;font-weight:600;color:var(--muted)">g</span> @ RM${(p.pricePerGram||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2})}/g</div>
-        <div class="gold-purchase-meta">${dateStr}${p.makingFee>0?' · Fee: RM'+(p.makingFee||0).toLocaleString('en-MY',{minimumFractionDigits:2}):''}${p.note?' · '+p.note:''}</div>
-        <div class="gold-purchase-meta" style="color:var(--coral)">Eff. cost: RM${effCost.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2})}/g</div>
-      </div>
-      <div class="gold-purchase-right">
-        <div class="gold-purchase-val">${fmtRM(paid)}</div>
-        ${t.currentPrice>0?`<div class="gold-purchase-pnl ${pnlClass}">${pnlStr}</div>`:''}
+  // ── Per-purity price rows ──
+  const activePurities = GOLD_PURITIES.filter(pt => t.byPurity[pt].grams > 0);
+  const priceRowsEl = document.getElementById('gold-purity-price-rows');
+  priceRowsEl.innerHTML = activePurities.map(pt=>{
+    const ps = t.byPurity[pt];
+    const price = getGoldPriceForPurity(pt);
+    const updKey = S.userSettings['goldPriceUpdated'+pt];
+    let updStr = '';
+    if(updKey){ const d=updKey.toDate?updKey.toDate():new Date(updKey); updStr=d.toLocaleDateString('en-MY',{day:'2-digit',month:'short'}); }
+    const pnlStr = (price&&ps.grams>0) ? ((ps.pnl>=0?'+':'')+fmtRM(Math.abs(ps.pnl),false)+'  ('+fmtPct(ps.pnlPct)+')') : '—';
+    const pnlClass = ps.pnl>=0?'pos':'neg';
+    return`<div class="gold-purity-section">
+      <div class="gold-purity-section-label">${GOLD_PURITY_LABELS[pt]} · ${ps.grams.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:3})}g</div>
+      <div class="gold-purity-section-row">
+        <div>
+          <div style="font-size:.7rem;color:rgba(255,255,255,.35)">Current price</div>
+          <div class="gold-purity-price">${price ? 'RM'+price.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2})+'/g' : 'Not set'}</div>
+          ${updStr?`<div style="font-size:.65rem;color:rgba(255,255,255,.3)">Updated ${updStr}</div>`:''}
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:.7rem;color:rgba(255,255,255,.35)">P&L</div>
+          <div class="gold-purity-pnl ${price?pnlClass:''}">${pnlStr}</div>
+        </div>
       </div>
     </div>`;
   }).join('');
 
-  // Earnings projection table
-  if(t.currentPrice>0 && t.totalGrams>0){
-    const scenarios = [
-      {label:'+5%',   mult:1.05},
-      {label:'+10%',  mult:1.10},
-      {label:'+20%',  mult:1.20},
-      {label:'+30%',  mult:1.30},
-      {label:'+50%',  mult:1.50},
-      {label:'+100%', mult:2.00},
-    ];
-    document.getElementById('gold-earn-table').innerHTML = scenarios.map(s=>{
-      const newPrice = t.currentPrice * s.mult;
-      const newValue = t.totalGrams * newPrice;
-      const profit = newValue - t.totalCost;
-      const profitClass = profit>=0?'':'neg';
-      return`<div class="gold-earn-row">
-        <span class="gold-earn-scenario">${s.label} price rise</span>
-        <span class="gold-earn-price">RM${newPrice.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2})}/g</span>
-        <span class="gold-earn-profit ${profitClass}">${profit>=0?'+':''}${fmtRM(Math.abs(profit),false)}</span>
+  // ── Purchases list (with purity badge) ──
+  const listEl = document.getElementById('gold-purchases-list');
+  listEl.innerHTML = S.goldPurchases.map(p=>{
+    const pt = p.purity || '916';
+    const ps = t.byPurity[pt];
+    const effCost = p.grams>0 ? ((p.pricePerGram*(p.grams||0)+(p.makingFee||0))/(p.grams)) : p.pricePerGram;
+    const paid = (p.pricePerGram||0)*(p.grams||0)+(p.makingFee||0);
+    const curPrice = getGoldPriceForPurity(pt)||0;
+    const curVal = (p.grams||0)*curPrice;
+    const pnl = curVal - paid;
+    const hasCurPrice = curPrice>0;
+    const pnlStr = hasCurPrice ? ((pnl>=0?'+':'')+fmtRM(Math.abs(pnl),false)) : '—';
+    const pnlClass = pnl>=0?'pos':'neg';
+    const dateStr = p.date ? fmtDate(p.date) : '—';
+    const icon = pt==='999'?'🥇':pt==='916'?'⭐':'✨';
+    return`<div class="gold-purchase-item" onclick="openGoldPurchaseModal('${p.id}')">
+      <div class="gold-purchase-icon">${icon}</div>
+      <div class="gold-purchase-info">
+        <div class="gold-purchase-name" style="display:flex;align-items:center;gap:6px">
+          ${(p.grams||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:3})}g
+          <span class="purity-badge p${pt}">${GOLD_PURITY_LABELS[pt]}</span>
+        </div>
+        <div class="gold-purchase-meta">@ RM${(p.pricePerGram||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2})}/g · ${dateStr}${p.makingFee>0?' · Fee: RM'+(p.makingFee||0).toLocaleString('en-MY',{minimumFractionDigits:2}):''}${p.note?' · '+p.note:''}</div>
+        <div class="gold-purchase-meta" style="color:var(--coral)">Eff. cost: RM${effCost.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2})}/g</div>
+      </div>
+      <div class="gold-purchase-right">
+        <div class="gold-purchase-val">${fmtRM(paid)}</div>
+        ${hasCurPrice?`<div class="gold-purchase-pnl ${pnlClass}">${pnlStr}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+
+  // ── Earnings projection table (per purity) ──
+  if(t.priceIsSet && t.totalGrams>0){
+    const scenarios = [{label:'+5%',mult:1.05},{label:'+10%',mult:1.10},{label:'+20%',mult:1.20},{label:'+30%',mult:1.30},{label:'+50%',mult:1.50},{label:'+100%',mult:2.00}];
+    const activePts = GOLD_PURITIES.filter(pt=>t.byPurity[pt].grams>0 && getGoldPriceForPurity(pt)>0);
+
+    // Header row if multiple purities
+    let tableHtml = '';
+    if(activePts.length > 1){
+      tableHtml += `<div style="display:grid;grid-template-columns:${activePts.length>1?'1fr '+activePts.map(()=>'auto').join(' '):'1fr auto auto'};gap:6px;padding:6px 0 8px;border-bottom:2px solid var(--border);font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">
+        <span>Scenario</span>${activePts.map(pt=>`<span class="purity-badge p${pt}" style="justify-content:center">${pt}</span>`).join('')}</div>`;
+    }
+    tableHtml += scenarios.map(s=>{
+      const cols = activePts.map(pt=>{
+        const ps = t.byPurity[pt];
+        const newP = getGoldPriceForPurity(pt)*s.mult;
+        const newV = ps.grams*newP;
+        const profit = newV-ps.cost;
+        return `<span class="gold-earn-profit ${profit>=0?'':'neg'}" style="text-align:right">${profit>=0?'+':''}${fmtRMShort(Math.abs(profit))}</span>`;
+      }).join('');
+      // Show price for first/only purity, or combined value if multiple
+      const combinedProfit = activePts.reduce((sum,pt)=>{
+        const ps=t.byPurity[pt]; return sum+(ps.grams*getGoldPriceForPurity(pt)*s.mult - ps.cost);
+      },0);
+      const priceRef = activePts.length===1 ? `RM${(getGoldPriceForPurity(activePts[0])*s.mult).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2})}/g` : fmtRM(t.totalValue*s.mult);
+      return`<div class="gold-earn-row" style="${activePts.length>1?'grid-template-columns:1fr '+ activePts.map(()=>'auto').join(' ')+';display:grid;gap:6px':''}">
+        <span class="gold-earn-scenario">${s.label}</span>
+        ${activePts.length===1
+          ? `<span class="gold-earn-price">${priceRef}</span><span class="gold-earn-profit ${combinedProfit>=0?'':'neg'}">${combinedProfit>=0?'+':''}${fmtRM(Math.abs(combinedProfit),false)}</span>`
+          : cols
+        }
       </div>`;
     }).join('');
+    document.getElementById('gold-earn-table').innerHTML = tableHtml;
   }
 }
 
 // ══════════════════════════════════════════
 //  GOLD TRACKER — CRUD
 // ══════════════════════════════════════════
+function selectGoldPurity(pt){
+  S.selGoldPurity = pt;
+  document.querySelectorAll('#gold-purity-toggle .gpurity-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.purity===pt);
+  });
+  // Pre-fill price for this purity if set and price field is empty or matches another purity's price
+  const cp = getGoldPriceForPurity(pt);
+  if(cp) document.getElementById('gold-price-per-gram').value = cp;
+  updateGoldPurchasePreview();
+}
+
 function openGoldPurchaseModal(goldId=null){
   S.editingGoldId = goldId;
   document.getElementById('gold-purchase-modal-title').textContent = goldId ? 'Edit Gold Purchase' : 'Add Gold Purchase';
@@ -3268,6 +3389,8 @@ function openGoldPurchaseModal(goldId=null){
   if(goldId){
     const p = S.goldPurchases.find(p=>p.id===goldId);
     if(p){
+      const pt = p.purity || '916';
+      S.selGoldPurity = pt;
       document.getElementById('gold-price-per-gram').value = p.pricePerGram||'';
       document.getElementById('gold-grams').value = p.grams||'';
       document.getElementById('gold-making-fee').value = p.makingFee||'';
@@ -3276,15 +3399,20 @@ function openGoldPurchaseModal(goldId=null){
       document.getElementById('gold-purchase-date').value = d.toISOString().split('T')[0];
     }
   } else {
+    S.selGoldPurity = '916'; // default to 916 for new purchases
     document.getElementById('gold-price-per-gram').value = '';
     document.getElementById('gold-grams').value = '';
     document.getElementById('gold-making-fee').value = '';
     document.getElementById('gold-purchase-note').value = '';
     document.getElementById('gold-purchase-date').value = new Date().toISOString().split('T')[0];
-    // Pre-fill with current price if set
-    const cp = getGoldCurrentPrice();
+    // Pre-fill with saved price for default purity
+    const cp = getGoldPriceForPurity(S.selGoldPurity);
     if(cp) document.getElementById('gold-price-per-gram').value = cp;
   }
+  // Sync purity toggle UI
+  document.querySelectorAll('#gold-purity-toggle .gpurity-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.purity===S.selGoldPurity);
+  });
   document.getElementById('gold-purchase-preview').style.display = 'none';
   updateGoldPurchasePreview();
   document.getElementById('gold-purchase-modal').classList.add('open');
@@ -3325,6 +3453,7 @@ async function saveGoldPurchase(){
   if(!grams||grams<=0){showToast('Enter grams purchased','err');return}
   if(!dateVal){showToast('Select a date','err');return}
   const data = {
+    purity: S.selGoldPurity || '916',
     pricePerGram: Math.round(pricePerGram*100)/100,
     grams: Math.round(grams*1000)/1000,
     makingFee: Math.round(makingFee*100)/100,
@@ -3347,13 +3476,56 @@ async function deleteGoldPurchase(){
   closeGoldPurchaseModal();
 }
 
-// ── Gold Price ──────────────────────────────────────────
-function openGoldPriceModal(){
-  const cp = getGoldCurrentPrice();
-  document.getElementById('gold-manual-price').value = cp||'';
+// ── Gold Price Modal ──────────────────────────────────────────
+function openGoldPriceModal(initialPurity=null){
+  S.selPricePurity = initialPurity || S.selGoldPurity || '999';
   document.getElementById('gold-price-fetch-hint').textContent = '';
+  _renderPricePurityTabs();
+  _renderPricePresets();
+  _renderGoldPriceSummary();
   document.getElementById('gold-price-modal').classList.add('open');
   setTimeout(()=>document.getElementById('gold-manual-price').focus(),250);
+}
+
+function selectPricePurity(pt){
+  S.selPricePurity = pt;
+  _renderPricePurityTabs();
+  _renderPricePresets();
+}
+
+function _renderPricePurityTabs(){
+  const pt = S.selPricePurity;
+  document.querySelectorAll('#price-purity-tabs .pp-tab').forEach(b=>{
+    b.classList.toggle('active', b.dataset.pp===pt);
+  });
+  document.getElementById('price-purity-label').textContent = `Setting price for ${GOLD_PURITY_LABELS[pt]} gold per gram`;
+  const saved = getGoldPriceForPurity(pt);
+  document.getElementById('gold-manual-price').value = saved||'';
+}
+
+function _renderPricePresets(){
+  const pt = S.selPricePurity;
+  const presets = GOLD_PRICE_PRESETS[pt] || [370,390,410,430];
+  document.getElementById('gold-price-presets').innerHTML = presets.map(p=>
+    `<button onclick="setGoldPriceQuick(${p})" style="padding:9px;background:#f5f7fb;border-radius:10px;font-weight:700;font-size:.8rem">RM${p}</button>`
+  ).join('');
+}
+
+function _renderGoldPriceSummary(){
+  const rows = GOLD_PURITIES.map(pt=>{
+    const price = getGoldPriceForPurity(pt);
+    if(!price) return '';
+    const updKey = S.userSettings['goldPriceUpdated'+pt];
+    let updStr = '';
+    if(updKey){ const d=updKey.toDate?updKey.toDate():new Date(updKey); updStr=' · '+d.toLocaleDateString('en-MY',{day:'2-digit',month:'short'}); }
+    return`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:.82rem">
+      <span style="font-weight:700">${GOLD_PURITY_LABELS[pt]}</span>
+      <span style="font-family:'DM Mono',monospace;font-weight:700;color:var(--teal2)">RM${price.toLocaleString('en-MY',{minimumFractionDigits:2})}/g${updStr}</span>
+    </div>`;
+  }).filter(Boolean).join('');
+  const summaryEl = document.getElementById('gold-price-summary');
+  document.getElementById('gold-price-summary-rows').innerHTML = rows || '<div style="font-size:.8rem;color:var(--muted)">No prices set yet.</div>';
+  summaryEl.style.display = 'block';
 }
 
 function setGoldPriceQuick(price){
@@ -3363,37 +3535,37 @@ function setGoldPriceQuick(price){
 async function saveGoldPrice(){
   const price = parseFloat(document.getElementById('gold-manual-price').value);
   if(!price||price<=0){showToast('Enter a valid price','err');return}
+  const pt = S.selPricePurity || '999';
   try{
-    const now = firebase.firestore.FieldValue.serverTimestamp();
-    await settingsRef().set({...S.userSettings, goldCurrentPrice:price, goldPriceUpdated:now},{merge:true});
-    showToast('Gold price saved ✓','ok');
-    closeModal('gold-price-modal');
+    const update = {[`goldPrice${pt}`]: Math.round(price*100)/100,
+                    [`goldPriceUpdated${pt}`]: firebase.firestore.FieldValue.serverTimestamp()};
+    await settingsRef().set({...S.userSettings,...update},{merge:true});
+    showToast(`${GOLD_PURITY_LABELS[pt]} price saved ✓`,'ok');
+    _renderGoldPriceSummary();
+    // Move to next purity that has no price set, or stay
+    const next = GOLD_PURITIES.find(p=>p!==pt && !getGoldPriceForPurity(p) && S.goldPurchases.some(pur=>(pur.purity||'916')===p));
+    if(next){ selectPricePurity(next); showToast(`Now set ${GOLD_PURITY_LABELS[next]} price`); }
   }catch(e){showToast('Error: '+e.message,'err')}
 }
 
 async function fetchGoldPriceAuto(){
   const hint = document.getElementById('gold-price-fetch-hint');
-  hint.textContent = '⏳ Fetching live gold price…';
+  hint.textContent = '⏳ Fetching 999 (24K) spot price…';
   try{
-    // XAU is gold spot price per troy oz in USD
-    // We already have MYR/USD rate from our rates engine
     const r = S.rates || await loadRates();
-    const usdPerOz = r ? (1/r.XAU) : null;  // if XAU available
-    if(usdPerOz && r && r.MYR){
-      const myrPerOz = usdPerOz * r.MYR;
-      const myrPerGram = myrPerOz / GOLD_TROY_OZ_TO_GRAM;
-      document.getElementById('gold-manual-price').value = myrPerGram.toFixed(2);
-      hint.textContent = `✅ Auto-fetched: RM${myrPerGram.toFixed(2)}/g via XAU spot rate`;
-      return;
+    const usdPerOz = r?.XAU ? (1/r.XAU) : null;
+    let myrPerGram999 = null;
+    if(usdPerOz && r?.MYR){
+      myrPerGram999 = usdPerOz * r.MYR / GOLD_TROY_OZ_TO_GRAM;
+    } else {
+      const res = await fetch('https://open.er-api.com/v6/latest/XAU',{cache:'no-store'});
+      const j = await res.json();
+      if(j?.rates?.MYR) myrPerGram999 = j.rates.MYR / GOLD_TROY_OZ_TO_GRAM;
     }
-    // Try open.er-api with XAU base
-    const res = await fetch('https://open.er-api.com/v6/latest/XAU',{cache:'no-store'});
-    const j = await res.json();
-    if(j && j.rates && j.rates.MYR){
-      const myrPerOz = j.rates.MYR;  // MYR per 1 troy oz of gold
-      const myrPerGram = myrPerOz / GOLD_TROY_OZ_TO_GRAM;
-      document.getElementById('gold-manual-price').value = myrPerGram.toFixed(2);
-      hint.textContent = `✅ Auto-fetched: RM${myrPerGram.toFixed(2)}/g (XAU → MYR)`;
+    if(myrPerGram999){
+      // Set 999 price; if currently viewing 999 fill it in
+      if(S.selPricePurity==='999') document.getElementById('gold-manual-price').value = myrPerGram999.toFixed(2);
+      hint.textContent = `✅ 999 spot: RM${myrPerGram999.toFixed(2)}/g — set 916/750 manually based on your jeweler's price.`;
     } else {
       hint.textContent = '⚠️ Auto-fetch unavailable. Enter price manually.';
     }
